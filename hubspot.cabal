@@ -1,0 +1,42 @@
+name:                   hubspot
+version:                0.0
+synopsis:               Implementation of parts of the HubSpot API
+homepage:               https://www.github.com/docmunch/haskell-hubspot
+license:                MIT
+license-file:           LICENSE
+author:                 Sean Leather
+maintainer:             sean@docmunch.com
+copyright:              2014 Daggerboard, Inc.
+category:               Web
+build-type:             Simple
+-- extra-source-files:     README.md
+cabal-version:          >=1.10
+
+library
+  hs-source-dirs:       src
+  ghc-options:          -Wall
+  default-language:     Haskell2010
+  default-extensions:
+                        CPP
+                        FlexibleInstances
+                        GeneralizedNewtypeDeriving
+                        LambdaCase
+                        NoImplicitPrelude
+                        OverloadedStrings
+                        RecordWildCards
+                        ScopedTypeVariables
+                        TemplateHaskell
+                        TupleSections
+  exposed-modules:
+                        Web.HubSpot.Authentication
+                        Web.HubSpot.Types
+  other-modules:
+                        Web.HubSpot.Common
+                        Web.HubSpot.Internal
+  build-depends:
+                        base >= 4.6 && < 4.8,
+                        bytestring,
+                        http-conduit >= 2.0 && < 3.0,
+                        http-types,
+                        text >= 0.11 && < 2.0,
+                        transformers
