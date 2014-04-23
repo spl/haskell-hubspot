@@ -48,7 +48,7 @@ parseAuthQuery q =
     err = "parseAuthQuery: failed to parse query: " <> renderQuery False q
 
 -- | Do the same as 'parseAuthQuery' but calculate the actual expiration time
--- using the current time.
+-- using the current time and the seconds provided by HubSpot.
 parseAuthQueryTime :: MonadIO m => Query -> m (Either ByteString AuthTokens)
 parseAuthQueryTime q = do
   t <- liftIO getCurrentTime
