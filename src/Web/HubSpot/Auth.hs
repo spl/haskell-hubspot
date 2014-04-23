@@ -34,15 +34,15 @@ makeAuthUrl clientId portalId redirectUrl scopes = mconcat
 
 -- | Use this on the query received at the redirect URL given to 'makeAuthUrl'.
 --
--- If authentication was successful, the 'Right' result is the 'AuthTokens'.
+-- If authentication was successful, the 'Right' result is the 'Auth'.
 --
 -- If authentication failed, the 'Left' result is an error message.
-parseAuthQuery :: Query -> Either ByteString AuthTokens
+parseAuthQuery :: Query -> Either ByteString Auth
 parseAuthQuery q =
   maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
     access_token <- lookupQ "access_token" q
     expires_in <- join $ intFromBS <$> lookupQ "expires_in" q
-    return $ AuthTokens
+    return $ Auth
       access_token
       (lookupQ "refresh_token" q)
       (Left expires_in)
@@ -51,7 +51,7 @@ parseAuthQuery q =
 
 -- | Do the same as 'parseAuthQuery' but calculate the actual expiration time
 -- using the current time and the seconds provided by HubSpot.
-parseAuthQueryTime :: MonadIO m => Query -> m (Either ByteString AuthTokens)
+parseAuthQueryTime :: MonadIO m => Query -> m (Either ByteString Auth)
 parseAuthQueryTime q = do
   t <- liftIO getCurrentTime
   let updateTime at =
@@ -62,10 +62,10 @@ parseAuthQueryTime q = do
 -- | Refresh the access token.
 refreshTokens
   :: MonadIO m
-  => AuthTokens
+  => Auth
   -> ClientId
   -> Manager
-  -> m (Either String (AuthTokens, PortalId))
+  -> m (Either String (Auth, PortalId))
 refreshTokens tok clientId mgr =
   case authRefreshToken tok of
     Nothing -> return $ Left "refreshTokens: No refresh_token provided"

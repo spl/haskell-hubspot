@@ -21,18 +21,18 @@ instance Show ClientId where
 
 -- | The authentication tokens include the access token, optional refresh token,
 -- and expiration time of the access token.
-data AuthTokens = AuthTokens
+data Auth = Auth
   { authAccessToken     :: ByteString
   , authRefreshToken    :: Maybe ByteString -- ^ Provided when using the "offline" scope
   , authExpiresIn       :: Either Int UTCTime -- ^ Number of seconds or time
   }
   deriving (Show)
 
-instance FromJSON AuthTokens where
-  parseJSON = withObject "AuthTokens" $ \o -> do
-    AuthTokens <$> (TS.encodeUtf8 <$> o .: "access_token")
-               <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
-               <*> (Left <$> o .: "expires_in")
+instance FromJSON Auth where
+  parseJSON = withObject "Auth" $ \o -> do
+    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
+         <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
+         <*> (Left <$> o .: "expires_in")
 
 --------------------------------------------------------------------------------
 
