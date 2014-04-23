@@ -1,4 +1,4 @@
-module Web.HubSpot.Authentication where
+module Web.HubSpot.Auth where
 
 --------------------------------------------------------------------------------
 

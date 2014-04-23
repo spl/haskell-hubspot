@@ -28,7 +28,7 @@ library
                         TemplateHaskell
                         TupleSections
   exposed-modules:
-                        Web.HubSpot.Authentication
+                        Web.HubSpot.Auth
                         Web.HubSpot.Types
   other-modules:
                         Web.HubSpot.Common
