@@ -10,7 +10,8 @@ import qualified Data.ByteString as BS
 
 -- | Authenticate with HubSpot using a redirect URL that is accessed with a GET
 -- and includes a query with access_token and expires_in. Since the access_token
--- is included, the URL should be secure (https) to avoid leaking the token.
+-- is included, the redirect URL should be secure (https) to avoid leaking the
+-- token.
 authenticate
   :: MonadIO m
   => ClientId
