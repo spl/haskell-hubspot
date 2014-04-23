@@ -30,7 +30,8 @@ authenticate clientId portalId redirectUrl scopes mgr = do
   return ()
 
 -- | Use this on the query received at the redirect URL given to 'authenticate'.
-fromAuthenticateUrl :: Query -> Maybe (AccessToken, Int)
-fromAuthenticateUrl query =
+-- The result is the 'AccessToken' and the expiration time (in seconds).
+parseAuthenticateQuery :: Query -> Maybe (AccessToken, Int)
+parseAuthenticateQuery query =
   (,) <$> AccessToken <$> lookupQ "access_token" query
       <*> join (intFromBS <$> lookupQ "expires_in" query)
