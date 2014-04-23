@@ -14,15 +14,15 @@ import qualified Data.ByteString as BS
 authenticate
   :: MonadIO m
   => ClientId
-  -> HubId
+  -> PortalId
   -> ByteString  -- ^ Redirect URL
   -> [Scope]
   -> Manager
   -> m ()
-authenticate clientId hubId redirectUrl scopes mgr = do
+authenticate clientId portalId redirectUrl scopes mgr = do
   req <- liftIO (parseUrl "https://app.hubspot.com/auth/authenticate") >>=
     setQuery [ ( "client_id"    , Just $ fromClientId clientId     )
-             , ( "portalId"     , Just $ hubIdQueryVal hubId       )
+             , ( "portalId"     , Just $ portalIdQueryVal portalId )
              , ( "redirect_uri" , Just $ redirectUrl               )
              , ( "scope"        , Just $ BS.intercalate "+" scopes )
              ]

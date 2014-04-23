@@ -30,20 +30,20 @@ instance Show AccessToken where
 
 --------------------------------------------------------------------------------
 
--- | Hub ID (sometimes called portal ID or account number)
+-- | Portal ID (sometimes called Hub ID or account number)
 --
 -- Note: Use the 'Num' instance for easy construction.
-newtype HubId = HubId { fromHubId :: Int }
+newtype PortalId = PortalId { fromPortalId :: Int }
   deriving (Num)
 
-instance Read HubId where
-  readsPrec n = map (first HubId) . readsPrec n
+instance Read PortalId where
+  readsPrec n = map (first PortalId) . readsPrec n
 
-instance Show HubId where
-  show = show . fromHubId
+instance Show PortalId where
+  show = show . fromPortalId
 
-hubIdQueryVal :: HubId -> ByteString
-hubIdQueryVal = intToBS . fromHubId
+portalIdQueryVal :: PortalId -> ByteString
+portalIdQueryVal = intToBS . fromPortalId
 
 --------------------------------------------------------------------------------
 
