@@ -1,4 +1,8 @@
-module Web.HubSpot.Auth where
+module Web.HubSpot.Auth
+  ( makeAuthUrl
+  , parseAuth
+  , refreshAuth
+  ) where
 
 --------------------------------------------------------------------------------
 
@@ -9,7 +13,7 @@ import qualified Data.ByteString as BS
 --------------------------------------------------------------------------------
 
 -- | This is the HubSpot authentication URL to be requested with a GET. Use
--- 'parseAuthQuery' to parse the query string included in the redirect URL.
+-- 'parseAuth' to parse the query string included in the redirect URL.
 --
 -- Note: Since the access_token is included, the redirect URL should be secure
 -- (https) to avoid leaking the token.
@@ -32,43 +36,34 @@ makeAuthUrl clientId portalId redirectUrl scopes = mconcat
   , BS.intercalate "+" $ map (urlEncode True) scopes
   ]
 
--- | Use this on the query received at the redirect URL given to 'makeAuthUrl'.
---
--- If authentication was successful, the 'Right' result is the 'Auth'.
---
--- If authentication failed, the 'Left' result is an error message.
-parseAuthQuery :: Query -> Either ByteString Auth
-parseAuthQuery q =
+-- | Parse the query provided by HubSpot via the redirect URL given to
+-- 'makeAuthUrl'. If authentication was successful, the 'Right' result contains
+-- the access token, optional refresh token, and expiration time of the access
+-- token. If authentication failed, the 'Left' result contains an error message.
+parseAuth :: MonadIO m => Query -> m (Either ByteString Auth)
+parseAuth q = sequence $ mkAuth <$> parseAuthSimple q
+
+-- | Do the same as 'parseAuth', but provide the number of seconds until
+-- expiration without calculating the actual expiration time.
+parseAuthSimple :: Query -> Either ByteString (ByteString, Maybe ByteString, Int)
+parseAuthSimple q =
   maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
     access_token <- lookupQ "access_token" q
     expires_in <- join $ intFromBS <$> lookupQ "expires_in" q
-    return $ Auth
-      access_token
-      (lookupQ "refresh_token" q)
-      (Left expires_in)
+    return (access_token, lookupQ "refresh_token" q, expires_in)
   where
-    err = "parseAuthQuery: failed to parse query: " <> renderQuery False q
-
--- | Do the same as 'parseAuthQuery' but calculate the actual expiration time
--- using the current time and the seconds provided by HubSpot.
-parseAuthQueryTime :: MonadIO m => Query -> m (Either ByteString Auth)
-parseAuthQueryTime q = do
-  t <- liftIO getCurrentTime
-  let updateTime at =
-        let Left seconds = authExpiresIn at
-        in  at { authExpiresIn = Right $ addUTCTime (fromIntegral seconds) t }
-  return $ updateTime <$> parseAuthQuery q
+    err = "parseAuthSimple: failed to parse query: " <> renderQuery False q
 
 -- | Refresh the access token.
-refreshTokens
+refreshAuth
   :: MonadIO m
   => Auth
   -> ClientId
   -> Manager
   -> m (Either String (Auth, PortalId))
-refreshTokens tok clientId mgr =
-  case authRefreshToken tok of
-    Nothing -> return $ Left "refreshTokens: No refresh_token provided"
+refreshAuth auth clientId mgr =
+  case authRefreshToken auth of
+    Nothing -> return $ Left "refreshAuth: No refresh_token provided"
     Just refreshToken -> do
       req <- liftIO (parseUrl "https://api.hubapi.com/auth/v1/refresh") >>=
         acceptJSON >>=
@@ -79,9 +74,9 @@ refreshTokens tok clientId mgr =
       rsp <- httpLbs req mgr
       case statusCode $ responseStatus rsp of
         200 -> liftM Right $
-          (,) `liftM` jsonContent "refreshTokens: authTokens" rsp
-              `ap`    jsonContent "refreshTokens: portalId" rsp
-        401 -> return $ Left "refreshTokens: Unauthorized request"
-        410 -> return $ Left "refreshTokens: Requested an inactive portal"
-        500 -> return $ Left "refreshTokens: HubSpot server error"
-        c   -> fail $ "refreshTokens: Unsupported HTTP status: " ++ show c
+          (,) `liftM` mkAuthFromJSON rsp
+              `ap`    jsonContent "refreshAuth: portalId" rsp
+        401 -> return $ Left "refreshAuth: Unauthorized request"
+        410 -> return $ Left "refreshAuth: Requested an inactive portal"
+        500 -> return $ Left "refreshAuth: HubSpot server error"
+        c   -> fail $ "refreshAuth: Unsupported HTTP status: " ++ show c

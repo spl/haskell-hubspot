@@ -8,12 +8,14 @@ module Web.HubSpot.Common
   , module Data.Aeson
   , module Data.ByteString
   , module Data.Char
+  , module Data.Either
   , module Data.Foldable
   , module Data.Maybe
   , module Data.Monoid
   , module Data.String
   , module Data.Text
   , module Data.Time.Clock
+  , module Data.Traversable.Compat
   , module Network.HTTP.Client.MultipartFormData
   , module Network.HTTP.Conduit
   , module Network.HTTP.Types
@@ -21,16 +23,17 @@ module Web.HubSpot.Common
 
 --------------------------------------------------------------------------------
 
-import Prelude
+import Prelude hiding (mapM, sequence)
 import Control.Applicative
 import Control.Arrow
-import Control.Monad
+import Control.Monad hiding (forM, mapM, sequence)
 import Control.Monad.IO.Class
-import Data.Aeson (ToJSON(..), FromJSON(..), fromJSON, (.:), withObject, withText)
+import Data.Aeson (ToJSON(..), FromJSON(..), fromJSON, (.:), Object, withObject)
 import qualified Data.Aeson as A
 import Data.Char
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
+import Data.Either
 import Data.Foldable (foldMap)
 import Data.Maybe
 import Data.Monoid
@@ -39,6 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 import Data.Time.Clock
+import Data.Traversable.Compat
 import Network.HTTP.Conduit
 import Network.HTTP.Types
 import Network.HTTP.Client.MultipartFormData

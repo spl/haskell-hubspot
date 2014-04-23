@@ -3,6 +3,8 @@ module Web.HubSpot.Internal where
 --------------------------------------------------------------------------------
 
 import Web.HubSpot.Common
+import qualified Data.Aeson.Types as A
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TS
 
 --------------------------------------------------------------------------------
@@ -19,20 +21,32 @@ instance Show ClientId where
 
 --------------------------------------------------------------------------------
 
--- | The authentication tokens include the access token, optional refresh token,
--- and expiration time of the access token.
+-- | Authentication information
 data Auth = Auth
-  { authAccessToken     :: ByteString
-  , authRefreshToken    :: Maybe ByteString -- ^ Provided when using the "offline" scope
-  , authExpiresIn       :: Either Int UTCTime -- ^ Number of seconds or time
+  { authAccessToken  :: ByteString       -- ^ Access token
+  , authRefreshToken :: Maybe ByteString -- ^ Refresh token for "offline" scope
+  , authExpiresIn    :: UTCTime          -- ^ Expiration time of of the access token
   }
   deriving (Show)
 
-instance FromJSON Auth where
-  parseJSON = withObject "Auth" $ \o -> do
-    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
-         <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
-         <*> (Left <$> o .: "expires_in")
+expireTime :: UTCTime -> Int -> UTCTime
+expireTime tm sec = fromIntegral sec `addUTCTime` tm
+
+mkAuth :: MonadIO m => (ByteString, Maybe ByteString, Int) -> m Auth
+mkAuth (at,rt,sec) = do
+  tm <- liftIO getCurrentTime
+  return $ Auth at rt $ expireTime tm sec
+
+pAuth :: Monad m => UTCTime -> Object -> m Auth
+pAuth tm = either (fail . mappend "pAuth") return . A.parseEither (\o ->
+  Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
+       <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
+       <*> (expireTime tm <$> o .: "expires_in"))
+
+mkAuthFromJSON :: MonadIO m => Response BL.ByteString -> m Auth
+mkAuthFromJSON rsp = do
+  tm <- liftIO getCurrentTime
+  jsonContent "Auth" rsp >>= pAuth tm
 
 --------------------------------------------------------------------------------
 
