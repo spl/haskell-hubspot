@@ -3,7 +3,6 @@ module Web.HubSpot.Internal where
 --------------------------------------------------------------------------------
 
 import Web.HubSpot.Common
-import qualified Data.Aeson.Types as A
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TS
 
@@ -29,6 +28,19 @@ data Auth = Auth
   }
   deriving (Show)
 
+instance ToJSON Auth where
+  toJSON (Auth {..}) = object
+    [ "access_token"  .= (String . TS.decodeUtf8 $ authAccessToken)
+    , "refresh_token" .= (String . TS.decodeUtf8 <$> authRefreshToken)
+    , "expires_in"    .= toJSON authExpiresIn
+    ]
+
+instance FromJSON Auth where
+  parseJSON = withObject "Auth" $ \o -> do
+    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
+         <*> (fmap TS.encodeUtf8 <$> o .: "refresh_token")
+         <*> o .: "expires_in"
+
 expireTime :: UTCTime -> Int -> UTCTime
 expireTime tm sec = fromIntegral sec `addUTCTime` tm
 
@@ -38,13 +50,13 @@ mkAuth (at,rt,sec) = do
   return $ Auth at rt $ expireTime tm sec
 
 pAuth :: Monad m => UTCTime -> Object -> m Auth
-pAuth tm = either (fail . mappend "pAuth") return . A.parseEither (\o ->
+pAuth tm = either (fail . mappend "pAuth") return . parseEither (\o ->
   Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
        <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
        <*> (expireTime tm <$> o .: "expires_in"))
 
-mkAuthFromJSON :: MonadIO m => Response BL.ByteString -> m Auth
-mkAuthFromJSON rsp = do
+mkAuthFromResponse :: MonadIO m => Response BL.ByteString -> m Auth
+mkAuthFromResponse rsp = do
   tm <- liftIO getCurrentTime
   jsonContent "Auth" rsp >>= pAuth tm
 

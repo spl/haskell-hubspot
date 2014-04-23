@@ -6,6 +6,7 @@ module Web.HubSpot.Common
   , module Control.Monad
   , module Control.Monad.IO.Class
   , module Data.Aeson
+  , module Data.Aeson.Types
   , module Data.ByteString
   , module Data.Char
   , module Data.Either
@@ -28,8 +29,8 @@ import Control.Applicative
 import Control.Arrow
 import Control.Monad hiding (forM, mapM, sequence)
 import Control.Monad.IO.Class
-import Data.Aeson (ToJSON(..), FromJSON(..), fromJSON, (.:), Object, withObject)
-import qualified Data.Aeson as A
+import Data.Aeson
+import Data.Aeson.Types
 import Data.Char
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
@@ -116,6 +117,6 @@ jsonContent msg rsp = do
   if contentType == contentTypeJSON then
     maybe (fail $ msg ++ ": Can't decode JSON from response: " ++ show rsp)
           return
-          (A.decode' body)
+          (decode' body)
   else
     fail $ msg ++ ": unknown content type: " ++ show contentType

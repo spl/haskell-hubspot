@@ -74,7 +74,7 @@ refreshAuth auth clientId mgr =
       rsp <- httpLbs req mgr
       case statusCode $ responseStatus rsp of
         200 -> liftM Right $
-          (,) `liftM` mkAuthFromJSON rsp
+          (,) `liftM` mkAuthFromResponse rsp
               `ap`    jsonContent "refreshAuth: portalId" rsp
         401 -> return $ Left "refreshAuth: Unauthorized request"
         410 -> return $ Left "refreshAuth: Requested an inactive portal"
