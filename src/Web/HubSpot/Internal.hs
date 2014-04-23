@@ -3,6 +3,7 @@ module Web.HubSpot.Internal where
 --------------------------------------------------------------------------------
 
 import Web.HubSpot.Common
+import qualified Data.Text.Encoding as TS
 
 --------------------------------------------------------------------------------
 
@@ -23,9 +24,15 @@ instance Show ClientId where
 data AuthTokens = AuthTokens
   { authAccessToken     :: ByteString
   , authRefreshToken    :: Maybe ByteString -- ^ Provided when using the "offline" scope
-  , authExpirationTime  :: UTCTime
+  , authExpiresIn       :: Either Int UTCTime -- ^ Number of seconds or time
   }
   deriving (Show)
+
+instance FromJSON AuthTokens where
+  parseJSON = withObject "AuthTokens" $ \o -> do
+    AuthTokens <$> (TS.encodeUtf8 <$> o .: "access_token")
+               <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
+               <*> (Left <$> o .: "expires_in")
 
 --------------------------------------------------------------------------------
 
@@ -40,6 +47,10 @@ instance Read PortalId where
 
 instance Show PortalId where
   show = show . fromPortalId
+
+instance FromJSON PortalId where
+  parseJSON = withObject "PortalId" $ \o -> do
+    PortalId <$> o .: "portal_id"
 
 portalIdQueryVal :: PortalId -> ByteString
 portalIdQueryVal = intToBS . fromPortalId

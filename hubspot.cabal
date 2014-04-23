@@ -34,10 +34,13 @@ library
                         Web.HubSpot.Common
                         Web.HubSpot.Internal
   build-depends:
+                        aeson >= 0.7,
                         base >= 4.6 && < 4.8,
                         bytestring,
+                        http-client >= 0.3,
                         http-conduit >= 2.0 && < 3.0,
                         http-types,
+                        mime-types,
                         text >= 0.11 && < 2.0,
                         time,
                         transformers

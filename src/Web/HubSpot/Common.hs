@@ -5,6 +5,7 @@ module Web.HubSpot.Common
   , module Control.Arrow
   , module Control.Monad
   , module Control.Monad.IO.Class
+  , module Data.Aeson
   , module Data.ByteString
   , module Data.Char
   , module Data.Foldable
@@ -13,6 +14,7 @@ module Web.HubSpot.Common
   , module Data.String
   , module Data.Text
   , module Data.Time.Clock
+  , module Network.HTTP.Client.MultipartFormData
   , module Network.HTTP.Conduit
   , module Network.HTTP.Types
   ) where
@@ -24,6 +26,8 @@ import Control.Applicative
 import Control.Arrow
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Aeson (ToJSON(..), FromJSON(..), fromJSON, (.:), withObject, withText)
+import qualified Data.Aeson as A
 import Data.Char
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
@@ -37,6 +41,8 @@ import qualified Data.Text.Encoding as TS
 import Data.Time.Clock
 import Network.HTTP.Conduit
 import Network.HTTP.Types
+import Network.HTTP.Client.MultipartFormData
+import Network.Mime (MimeType)
 
 #if MIN_VERSION_bytestring(0,10,2)
 import Data.ByteString.Builder (toLazyByteString, intDec)
@@ -60,6 +66,12 @@ readMay :: Read a => String -> Maybe a
 readMay s = case [x | (x, t) <- reads s, ("", "") <- lex t] of
   [x] -> Just x
   _   -> Nothing
+
+--------------------------------------------------------------------------------
+
+setMethod :: Monad m => StdMethod -> Request -> m Request
+setMethod m req = return $ req { method = renderStdMethod m }
+
 --------------------------------------------------------------------------------
 
 setQuery :: Monad m => Query -> Request -> m Request
@@ -67,3 +79,39 @@ setQuery q req = return $ req { queryString = renderQuery True q }
 
 lookupQ :: ByteString -> Query -> Maybe ByteString
 lookupQ k = join . lookup k
+
+--------------------------------------------------------------------------------
+
+addHeader :: Monad m => Header -> Request -> m Request
+addHeader hdr req = return $ req { requestHeaders = hdr : requestHeaders req }
+
+findHeader :: Monad m => HeaderName -> Response b -> m ByteString
+findHeader hdr rsp = case lookup hdr $ responseHeaders rsp of
+  Nothing -> fail $  "findHeader: Can't find " ++ show hdr
+                  ++ " in: " ++ show (responseHeaders rsp)
+  Just val -> return val
+
+--------------------------------------------------------------------------------
+
+mimeTypeContent :: Monad m => Response BL.ByteString -> m (MimeType, BL.ByteString)
+mimeTypeContent rsp =
+  (,) `liftM` findHeader hContentType rsp
+      `ap`    return (responseBody rsp)
+
+--------------------------------------------------------------------------------
+
+contentTypeJSON :: ByteString
+contentTypeJSON = "application/json"
+
+acceptJSON :: Monad m => Request -> m Request
+acceptJSON = addHeader (hAccept, contentTypeJSON)
+
+jsonContent :: (Monad m, FromJSON a) => String -> Response BL.ByteString -> m a
+jsonContent msg rsp = do
+  (contentType, body) <- mimeTypeContent rsp
+  if contentType == contentTypeJSON then
+    maybe (fail $ msg ++ ": Can't decode JSON from response: " ++ show rsp)
+          return
+          (A.decode' body)
+  else
+    fail $ msg ++ ": unknown content type: " ++ show contentType

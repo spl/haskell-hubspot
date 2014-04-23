@@ -35,15 +35,51 @@ authenticate clientId portalId redirectUrl scopes mgr = do
 -- If authentication was successful, the 'Right' result is the 'AuthTokens'.
 --
 -- If authentication failed, the 'Left' result is an error message.
-parseAuthenticateQuery :: MonadIO m => Query -> m (Either ByteString AuthTokens)
-parseAuthenticateQuery q = do
-  t <- liftIO getCurrentTime
-  return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
+parseAuthQuery :: Query -> Either ByteString AuthTokens
+parseAuthQuery q =
+  maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
     access_token <- lookupQ "access_token" q
     expires_in <- join $ intFromBS <$> lookupQ "expires_in" q
     return $ AuthTokens
       access_token
       (lookupQ "refresh_token" q)
-      (addUTCTime (fromIntegral expires_in) t)
+      (Left expires_in)
   where
-    err = "parseAuthenticateQuery: failed to parse query: " <> renderQuery False q
+    err = "parseAuthQuery: failed to parse query: " <> renderQuery False q
+
+-- | Do the same as 'parseAuthQuery' but calculate the actual expiration time
+-- using the current time.
+parseAuthQueryTime :: MonadIO m => Query -> m (Either ByteString AuthTokens)
+parseAuthQueryTime q = do
+  t <- liftIO getCurrentTime
+  let updateTime at =
+        let Left seconds = authExpiresIn at
+        in  at { authExpiresIn = Right $ addUTCTime (fromIntegral seconds) t }
+  return $ updateTime <$> parseAuthQuery q
+
+-- | Refresh the access token.
+refreshTokens
+  :: MonadIO m
+  => AuthTokens
+  -> ClientId
+  -> Manager
+  -> m (Either String (AuthTokens, PortalId))
+refreshTokens tok clientId mgr =
+  case authRefreshToken tok of
+    Nothing -> return $ Left "refreshTokens: No refresh_token provided"
+    Just refreshToken -> do
+      req <- liftIO (parseUrl "https://api.hubapi.com/auth/v1/refresh") >>=
+        acceptJSON >>=
+        formDataBody [ partBS "refresh_token" refreshToken
+                     , partBS "client_id" $ fromClientId clientId
+                     , partBS "grant_type" "refresh_token"
+                     ]
+      rsp <- httpLbs req mgr
+      case statusCode $ responseStatus rsp of
+        200 -> liftM Right $
+          (,) `liftM` jsonContent "refreshTokens: authTokens" rsp
+              `ap`    jsonContent "refreshTokens: portalId" rsp
+        401 -> return $ Left "refreshTokens: Unauthorized request"
+        410 -> return $ Left "refreshTokens: Requested an inactive portal"
+        500 -> return $ Left "refreshTokens: HubSpot server error"
+        c   -> fail $ "refreshTokens: Unsupported HTTP status: " ++ show c
