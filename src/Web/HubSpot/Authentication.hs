@@ -32,14 +32,18 @@ authenticate clientId portalId redirectUrl scopes mgr = do
 
 -- | Use this on the query received at the redirect URL given to 'authenticate'.
 --
--- If authentication was successful, the 'Right' result is the 'AccessToken' and
--- the expiration time (in seconds).
+-- If authentication was successful, the 'Right' result is the 'AuthTokens'.
 --
 -- If authentication failed, the 'Left' result is an error message.
-parseAuthenticateQuery :: Query -> Either ByteString (AccessToken, Int)
-parseAuthenticateQuery q =
-  maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $
-    (,) <$> AccessToken <$> lookupQ "access_token" q
-        <*> join (intFromBS <$> lookupQ "expires_in" q)
+parseAuthenticateQuery :: MonadIO m => Query -> m (Either ByteString AuthTokens)
+parseAuthenticateQuery q = do
+  t <- liftIO getCurrentTime
+  return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
+    access_token <- lookupQ "access_token" q
+    expires_in <- join $ intFromBS <$> lookupQ "expires_in" q
+    return $ AuthTokens
+      access_token
+      (lookupQ "refresh_token" q)
+      (addUTCTime (fromIntegral expires_in) t)
   where
     err = "parseAuthenticateQuery: failed to parse query: " <> renderQuery False q

@@ -12,6 +12,7 @@ module Web.HubSpot.Common
   , module Data.Monoid
   , module Data.String
   , module Data.Text
+  , module Data.Time.Clock
   , module Network.HTTP.Conduit
   , module Network.HTTP.Types
   ) where
@@ -33,6 +34,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
+import Data.Time.Clock
 import Network.HTTP.Conduit
 import Network.HTTP.Types
 

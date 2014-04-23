@@ -1,6 +1,6 @@
 module Web.HubSpot.Types
   ( ClientId
-  , AccessToken
+  , AuthTokens
   , PortalId
   , Scope
   ) where

@@ -18,15 +18,14 @@ instance Show ClientId where
 
 --------------------------------------------------------------------------------
 
--- | OAuth access token
---
--- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
--- construction.
-newtype AccessToken = AccessToken { fromAccessToken :: ByteString }
-  deriving (IsString)
-
-instance Show AccessToken where
-  show = showBS . fromAccessToken
+-- | The authentication tokens include the access token, optional refresh token,
+-- and expiration time of the access token.
+data AuthTokens = AuthTokens
+  { authAccessToken     :: ByteString
+  , authRefreshToken    :: Maybe ByteString -- ^ Provided when using the "offline" scope
+  , authExpirationTime  :: UTCTime
+  }
+  deriving (Show)
 
 --------------------------------------------------------------------------------
 
