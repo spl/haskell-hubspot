@@ -8,6 +8,7 @@ module Web.HubSpot.Common
   , module Data.ByteString
   , module Data.Char
   , module Data.Foldable
+  , module Data.Maybe
   , module Data.Monoid
   , module Data.String
   , module Data.Text
@@ -26,6 +27,7 @@ import Data.Char
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import Data.Foldable (foldMap)
+import Data.Maybe
 import Data.Monoid
 import Data.String (IsString(..))
 import Data.Text (Text)
