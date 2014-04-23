@@ -8,29 +8,31 @@ import qualified Data.ByteString as BS
 
 --------------------------------------------------------------------------------
 
--- | Authenticate with HubSpot using a redirect URL that is accessed with a GET
--- and includes a query with access_token and expires_in. Since the access_token
--- is included, the redirect URL should be secure (https) to avoid leaking the
--- token.
-authenticate
-  :: MonadIO m
-  => ClientId
+-- | This is the HubSpot authentication URL to be requested with a GET. Use
+-- 'parseAuthQuery' to parse the query string included in the redirect URL.
+--
+-- Note: Since the access_token is included, the redirect URL should be secure
+-- (https) to avoid leaking the token.
+makeAuthUrl
+  :: ClientId
   -> PortalId
   -> ByteString  -- ^ Redirect URL
   -> [Scope]
-  -> Manager
-  -> m ()
-authenticate clientId portalId redirectUrl scopes mgr = do
-  req <- liftIO (parseUrl "https://app.hubspot.com/auth/authenticate") >>=
-    setQuery [ ( "client_id"    , Just $ fromClientId clientId     )
-             , ( "portalId"     , Just $ portalIdQueryVal portalId )
-             , ( "redirect_uri" , Just $ redirectUrl               )
-             , ( "scope"        , Just $ BS.intercalate "+" scopes )
-             ]
-  _ <- httpLbs req mgr
-  return ()
+  -> ByteString
+makeAuthUrl clientId portalId redirectUrl scopes = mconcat
+  [ "https://app.hubspot.com/auth/authenticate"
+  , renderQuery True
+      [ ( "client_id"    , Just $ fromClientId clientId     )
+      , ( "portalId"     , Just $ portalIdQueryVal portalId )
+      , ( "redirect_uri" , Just $ redirectUrl               )
+      ]
+    -- Scopes are not rendered as above because that would
+    -- percent-encode the "+".
+  , "&scope="
+  , BS.intercalate "+" $ map (urlEncode True) scopes
+  ]
 
--- | Use this on the query received at the redirect URL given to 'authenticate'.
+-- | Use this on the query received at the redirect URL given to 'makeAuthUrl'.
 --
 -- If authentication was successful, the 'Right' result is the 'AuthTokens'.
 --
