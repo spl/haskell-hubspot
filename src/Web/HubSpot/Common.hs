@@ -17,7 +17,6 @@ module Web.HubSpot.Common
   , module Data.Text
   , module Data.Time.Clock
   , module Data.Traversable.Compat
-  , module Network.HTTP.Client.MultipartFormData
   , module Network.HTTP.Conduit
   , module Network.HTTP.Types
   ) where
@@ -46,7 +45,6 @@ import Data.Time.Clock
 import Data.Traversable.Compat
 import Network.HTTP.Conduit
 import Network.HTTP.Types
-import Network.HTTP.Client.MultipartFormData
 import Network.Mime (MimeType)
 
 #if MIN_VERSION_bytestring(0,10,2)
@@ -102,6 +100,11 @@ mimeTypeContent :: Monad m => Response BL.ByteString -> m (MimeType, BL.ByteStri
 mimeTypeContent rsp =
   (,) `liftM` findHeader hContentType rsp
       `ap`    return (responseBody rsp)
+
+--------------------------------------------------------------------------------
+
+setUrlEncodedBody :: Monad m => [(ByteString, ByteString)] -> Request -> m Request
+setUrlEncodedBody body req = return $ urlEncodedBody body req
 
 --------------------------------------------------------------------------------
 

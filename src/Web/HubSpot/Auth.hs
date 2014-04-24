@@ -61,16 +61,16 @@ refreshAuth
   -> ClientId
   -> Manager
   -> m (Either String (Auth, PortalId))
-refreshAuth auth clientId mgr =
-  case authRefreshToken auth of
+refreshAuth Auth {..} clientId mgr =
+  case authRefreshToken of
     Nothing -> return $ Left "refreshAuth: No refresh_token provided"
     Just refreshToken -> do
       req <- liftIO (parseUrl "https://api.hubapi.com/auth/v1/refresh") >>=
         acceptJSON >>=
-        formDataBody [ partBS "refresh_token" refreshToken
-                     , partBS "client_id" $ fromClientId clientId
-                     , partBS "grant_type" "refresh_token"
-                     ]
+        setUrlEncodedBody [ ( "refresh_token" , refreshToken          )
+                          , ( "client_id"     , fromClientId clientId )
+                          , ( "grant_type"    , "refresh_token"       )
+                          ]
       rsp <- httpLbs req mgr
       case statusCode $ responseStatus rsp of
         200 -> liftM Right $
