@@ -7,6 +7,8 @@ module Web.HubSpot.Types
   , PropertyType(..)
   , PropertyFieldType(..)
   , PropertyOption(..)
+  , Group(..)
+  , GroupProperties(..)
   ) where
 
 --------------------------------------------------------------------------------
