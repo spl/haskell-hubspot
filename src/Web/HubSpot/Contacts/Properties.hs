@@ -11,7 +11,7 @@ import qualified Data.Text as TS
 -- | Get all contact properties (fields)
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_properties
-getProperties :: MonadIO m => Auth -> Manager -> m [ContactProperty]
+getProperties :: MonadIO m => Auth -> Manager -> m [Property]
 getProperties auth mgr =
   newAuthReq auth "https://api.hubapi.com/contacts/v1/properties"
   >>= acceptJSON
@@ -24,11 +24,11 @@ getProperties auth mgr =
 createProperty
   :: MonadIO m
   => Auth
-  -> ContactProperty
+  -> Property
   -> Manager
-  -> m (Either ErrorMessage ContactProperty)
+  -> m (Either ErrorMessage Property)
 createProperty auth prop mgr =
-  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/properties/" <> cpName prop)
+  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/properties/" <> propName prop)
   >>= setMethod PUT
   >>= acceptJSON
   >>= setJSONBody prop

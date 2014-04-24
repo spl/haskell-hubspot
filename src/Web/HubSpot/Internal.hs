@@ -116,79 +116,79 @@ instance FromJSON ErrorMessage where
 
 -- | This represents a contact property (or field) object.
 --
--- Ideally, we would use only enumerations for the values of 'cpType' and
--- 'cpFieldType'. However, we have observed unexpected strings from HubSpot, and
+-- Ideally, we would use only enumerations for the values of 'propType' and
+-- 'propFieldType'. However, we have observed unexpected strings from HubSpot, and
 -- we use 'Left' for these values.
 --
 -- https://developers.hubspot.com/docs/methods/contacts/create_property
-data ContactProperty = ContactProperty
-  { cpName          :: !Text
-  , cpLabel         :: !Text
-  , cpDescription   :: !Text
-  , cpGroupName     :: !Text
-  , cpType          :: !(Either Text ContactPropertyType)
-  , cpFieldType     :: !(Either Text ContactPropertyFieldType)
-  , cpFormField     :: !Bool
-  , cpDisplayOrder  :: !Int
-  , cpOptions       :: ![ContactPropertyOption]
+data Property = Property
+  { propName          :: !Text
+  , propLabel         :: !Text
+  , propDescription   :: !Text
+  , propGroupName     :: !Text
+  , propType          :: !(Either Text PropertyType)
+  , propFieldType     :: !(Either Text PropertyFieldType)
+  , propFormField     :: !Bool
+  , propDisplayOrder  :: !Int
+  , propOptions       :: ![PropertyOption]
   }
   deriving (Show)
 
 eitherToJSON :: (ToJSON a, ToJSON b) => Either a b -> Value
 eitherToJSON = either toJSON toJSON
 
-instance ToJSON ContactProperty where
-  toJSON ContactProperty {..} = object
-    [ "name"         .= toJSON cpName
-    , "label"        .= toJSON cpLabel
-    , "description"  .= toJSON cpDescription
-    , "groupName"    .= toJSON cpGroupName
-    , "type"         .= eitherToJSON cpType
-    , "fieldType"    .= eitherToJSON cpFieldType
-    , "formField"    .= toJSON cpFormField
-    , "displayOrder" .= toJSON cpDisplayOrder
-    , "options"      .= toJSON cpOptions
+instance ToJSON Property where
+  toJSON Property {..} = object
+    [ "name"         .= toJSON propName
+    , "label"        .= toJSON propLabel
+    , "description"  .= toJSON propDescription
+    , "groupName"    .= toJSON propGroupName
+    , "type"         .= eitherToJSON propType
+    , "fieldType"    .= eitherToJSON propFieldType
+    , "formField"    .= toJSON propFormField
+    , "displayOrder" .= toJSON propDisplayOrder
+    , "options"      .= toJSON propOptions
     ]
 
 -- | Parse alternatives: first 'Right', then 'Left'
 parseAlt :: (FromJSON a, FromJSON b) => Object -> Text -> Parser (Either a b)
 parseAlt o name = Right <$> o .: name <|> Left <$> o .: name
 
-instance FromJSON ContactProperty where
-  parseJSON = withObject "ContactProperty" $ \o -> do
-    ContactProperty <$> o .: "name"
-                    <*> o .: "label"
-                    <*> o .: "description"
-                    <*> o .: "groupName"
-                    <*> parseAlt o "type"
-                    <*> parseAlt o "fieldType"
-                    <*> o .: "formField"
-                    <*> o .: "displayOrder"
-                    <*> o .: "options"
+instance FromJSON Property where
+  parseJSON = withObject "Property" $ \o -> do
+    Property <$> o .: "name"
+             <*> o .: "label"
+             <*> o .: "description"
+             <*> o .: "groupName"
+             <*> parseAlt o "type"
+             <*> parseAlt o "fieldType"
+             <*> o .: "formField"
+             <*> o .: "displayOrder"
+             <*> o .: "options"
 
-data ContactPropertyType
-  = CPTString
-  | CPTNumber
-  | CPTBool
-  | CPTDateTime
-  | CPTEnumeration
+data PropertyType
+  = PTString
+  | PTNumber
+  | PTBool
+  | PTDateTime
+  | PTEnumeration
   deriving (Eq, Enum, Bounded, Read, Show)
 
-data ContactPropertyFieldType
-  = CPFTTextArea
-  | CPFTSelect
-  | CPFTText
-  | CPFTDate
-  | CPFTFile
-  | CPFTNumber
-  | CPFTRadio
-  | CPFTCheckBox
+data PropertyFieldType
+  = PFTTextArea
+  | PFTSelect
+  | PFTText
+  | PFTDate
+  | PFTFile
+  | PFTNumber
+  | PFTRadio
+  | PFTCheckBox
   deriving (Eq, Enum, Bounded, Read, Show)
 
-data ContactPropertyOption = ContactPropertyOption
-  { cpoLabel        :: !Text
-  , cpoValue        :: !Text
-  , cpoDisplayOrder :: !Int
+data PropertyOption = PropertyOption
+  { poLabel        :: !Text
+  , poValue        :: !Text
+  , poDisplayOrder :: !Int
   }
   deriving (Show)
 
@@ -203,7 +203,7 @@ data Group = Group
 
 data GroupProperties = GroupProperties
   { gpGroup      :: !Group
-  , gpProperties :: ![ContactProperty]
+  , gpProperties :: ![Property]
   }
   deriving Show
 
@@ -221,8 +221,8 @@ instance FromJSON GroupProperties where
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
 
-deriveJSON_ ''ContactPropertyType       (defaultEnumOptions   3)
-deriveJSON_ ''ContactPropertyFieldType  (defaultEnumOptions   4)
+deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
+deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
 
-deriveJSON_ ''ContactPropertyOption     (defaultRecordOptions 3)
-deriveJSON_ ''Group                     (defaultRecordOptions 2)
+deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
+deriveJSON_ ''Group             (defaultRecordOptions 2)

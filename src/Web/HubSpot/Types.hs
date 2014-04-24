@@ -3,10 +3,10 @@ module Web.HubSpot.Types
   , Auth(..)
   , PortalId
   , Scope
-  , ContactProperty(..)
-  , ContactPropertyType(..)
-  , ContactPropertyFieldType(..)
-  , ContactPropertyOption(..)
+  , Property(..)
+  , PropertyType(..)
+  , PropertyFieldType(..)
+  , PropertyOption(..)
   ) where
 
 --------------------------------------------------------------------------------
