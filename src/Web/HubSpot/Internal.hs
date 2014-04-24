@@ -94,25 +94,55 @@ type Scope = ByteString
 
 -- | This represents a contact property (or field) object.
 --
--- Ideally, we would use enumberations for 'cpType' and 'cpFieldType'; however,
--- we have observed that HubSpot does not guarantee the values of these fields.
--- You may wish to use the aeson conversion functions yourself -- just be wary
--- of parsing failure.
+-- Ideally, we would use only enumerations for the values of 'cpType' and
+-- 'cpFieldType'. However, we have observed unexpected strings from HubSpot, and
+-- we use 'Left' for these values.
 --
 -- https://developers.hubspot.com/docs/methods/contacts/create_property
-
 data ContactProperty = ContactProperty
   { cpName          :: !Text
   , cpLabel         :: !Text
   , cpDescription   :: !Text
   , cpGroupName     :: !Text
-  , cpType          :: !Text -- ^ See 'ContactPropertyType'.
-  , cpFieldType     :: !Text -- ^ See 'ContactPropertyFieldType'.
+  , cpType          :: !(Either Text ContactPropertyType)
+  , cpFieldType     :: !(Either Text ContactPropertyFieldType)
   , cpFormField     :: !Bool
   , cpDisplayOrder  :: !Int
   , cpOptions       :: ![ContactPropertyOption]
   }
   deriving (Show)
+
+eitherToJSON :: (ToJSON a, ToJSON b) => Either a b -> Value
+eitherToJSON = either toJSON toJSON
+
+instance ToJSON ContactProperty where
+  toJSON ContactProperty {..} = object
+    [ "name"         .= toJSON cpName
+    , "label"        .= toJSON cpLabel
+    , "description"  .= toJSON cpDescription
+    , "groupName"    .= toJSON cpGroupName
+    , "type"         .= eitherToJSON cpType
+    , "fieldType"    .= eitherToJSON cpFieldType
+    , "formField"    .= toJSON cpFormField
+    , "displayOrder" .= toJSON cpDisplayOrder
+    , "options"      .= toJSON cpOptions
+    ]
+
+-- | Parse alternatives: first 'Right', then 'Left'
+parseAlt :: (FromJSON a, FromJSON b) => Object -> Text -> Parser (Either a b)
+parseAlt o name = Right <$> o .: name <|> Left <$> o .: name
+
+instance FromJSON ContactProperty where
+  parseJSON = withObject "ContactProperty" $ \o -> do
+    ContactProperty <$> o .: "name"
+                    <*> o .: "label"
+                    <*> o .: "description"
+                    <*> o .: "groupName"
+                    <*> parseAlt o "type"
+                    <*> parseAlt o "fieldType"
+                    <*> o .: "formField"
+                    <*> o .: "displayOrder"
+                    <*> o .: "options"
 
 data ContactPropertyType
   = CPTString
@@ -147,4 +177,3 @@ deriveJSON_ ''ContactPropertyType       (defaultEnumOptions   3)
 deriveJSON_ ''ContactPropertyFieldType  (defaultEnumOptions   4)
 
 deriveJSON_ ''ContactPropertyOption     (defaultRecordOptions 3)
-deriveJSON_ ''ContactProperty           (defaultRecordOptions 2)
