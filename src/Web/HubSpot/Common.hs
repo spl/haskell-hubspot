@@ -43,7 +43,8 @@ import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 import Data.Time.Clock
 import Data.Traversable.Compat
-import Network.HTTP.Conduit
+import Network.HTTP.Conduit hiding (parseUrl)
+import qualified Network.HTTP.Conduit
 import Network.HTTP.Types
 import Network.Mime (MimeType)
 
@@ -69,6 +70,11 @@ readMay :: Read a => String -> Maybe a
 readMay s = case [x | (x, t) <- reads s, ("", "") <- lex t] of
   [x] -> Just x
   _   -> Nothing
+
+--------------------------------------------------------------------------------
+
+parseUrl :: MonadIO m => String -> m Request
+parseUrl = liftIO . Network.HTTP.Conduit.parseUrl
 
 --------------------------------------------------------------------------------
 

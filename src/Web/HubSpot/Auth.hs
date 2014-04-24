@@ -65,7 +65,7 @@ refreshAuth Auth {..} clientId mgr =
   case authRefreshToken of
     Nothing -> return $ Left "refreshAuth: No refresh_token provided"
     Just refreshToken -> do
-      req <- liftIO (parseUrl "https://api.hubapi.com/auth/v1/refresh") >>=
+      req <- parseUrl "https://api.hubapi.com/auth/v1/refresh" >>=
         acceptJSON >>=
         setUrlEncodedBody [ ( "refresh_token" , refreshToken          )
                           , ( "client_id"     , fromClientId clientId )
