@@ -86,6 +86,10 @@ setMethod m req = return $ req { method = renderStdMethod m }
 setQuery :: Monad m => Query -> Request -> m Request
 setQuery q req = return $ req { queryString = renderQuery True q }
 
+addQueryItem :: Monad m => QueryItem -> Request -> m Request
+addQueryItem qi req = return $
+  req { queryString = renderQuery True $ qi : parseQuery (queryString req) }
+
 lookupQ :: ByteString -> Query -> Maybe ByteString
 lookupQ k = join . lookup k
 
