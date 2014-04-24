@@ -29,6 +29,7 @@ createProperty
   -> m ContactProperty
 createProperty auth prop mgr =
   newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/properties/" <> cpName prop)
+  >>= setMethod PUT
   >>= acceptJSON
   >>= setJSONBody prop
   >>= flip httpLbs mgr
