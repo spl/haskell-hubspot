@@ -114,6 +114,9 @@ findHeader hdr rsp = case lookup hdr $ responseHeaders rsp of
 
 --------------------------------------------------------------------------------
 
+setContentType :: Monad m => ByteString -> Request -> m Request
+setContentType contentType = addHeader (hContentType, contentType)
+
 -- | Removes everything after the semicolon, if present.
 --
 -- Note: Taken from Yesod.Content in yesod-core.
@@ -130,6 +133,11 @@ mimeTypeContent rsp =
 setUrlEncodedBody :: Monad m => [(ByteString, ByteString)] -> Request -> m Request
 setUrlEncodedBody body req = return $ urlEncodedBody body req
 
+setBody :: Monad m => ByteString -> BL.ByteString -> Request -> m Request
+setBody contentType body req =
+  return req { requestBody = RequestBodyLBS body } >>=
+  setContentType contentType
+
 --------------------------------------------------------------------------------
 
 contentTypeJSON :: ByteString
@@ -137,6 +145,9 @@ contentTypeJSON = "application/json"
 
 acceptJSON :: Monad m => Request -> m Request
 acceptJSON = addHeader (hAccept, contentTypeJSON)
+
+setJSONBody :: (Monad m, ToJSON a) => a -> Request -> m Request
+setJSONBody obj = setBody contentTypeJSON $ encode obj
 
 jsonContent :: (Monad m, FromJSON a) => String -> Response BL.ByteString -> m a
 jsonContent msg rsp = do
