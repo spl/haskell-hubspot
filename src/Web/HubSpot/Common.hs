@@ -34,6 +34,7 @@ import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types
 import Data.Char
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import Data.Either
 import Data.Foldable (foldMap)
@@ -113,9 +114,15 @@ findHeader hdr rsp = case lookup hdr $ responseHeaders rsp of
 
 --------------------------------------------------------------------------------
 
+-- | Removes everything after the semicolon, if present.
+--
+-- Note: Taken from Yesod.Content in yesod-core.
+simpleContentType :: ByteString -> ByteString
+simpleContentType = fst . BS.breakByte 59 -- 59 == ;
+
 mimeTypeContent :: Monad m => Response BL.ByteString -> m (MimeType, BL.ByteString)
 mimeTypeContent rsp =
-  (,) `liftM` findHeader hContentType rsp
+  (,) `liftM` liftM simpleContentType (findHeader hContentType rsp)
       `ap`    return (responseBody rsp)
 
 --------------------------------------------------------------------------------
