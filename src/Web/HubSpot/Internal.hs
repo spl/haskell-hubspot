@@ -92,6 +92,27 @@ type Scope = ByteString
 
 --------------------------------------------------------------------------------
 
+-- | Error message JSON object returned by HubSpot
+data ErrorMessage = ErrorMessage
+  { errorMessage   :: !Text
+  , errorRequestId :: !Text
+  }
+  deriving Show
+
+instance ToJSON ErrorMessage where
+  toJSON ErrorMessage {..} = object
+    [ "status"    .= String "error"
+    , "message"   .= String errorMessage
+    , "requestId" .= String errorRequestId
+    ]
+
+instance FromJSON ErrorMessage where
+  parseJSON = withObject "ErrorMessage" $ \o -> do
+    ErrorMessage <$> o .: "message"
+                 <*> o .: "requestId"
+
+--------------------------------------------------------------------------------
+
 -- | This represents a contact property (or field) object.
 --
 -- Ideally, we would use only enumerations for the values of 'cpType' and

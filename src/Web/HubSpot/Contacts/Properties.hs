@@ -26,11 +26,13 @@ createProperty
   => Auth
   -> ContactProperty
   -> Manager
-  -> m ContactProperty
+  -> m (Either ErrorMessage ContactProperty)
 createProperty auth prop mgr =
   newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/properties/" <> cpName prop)
   >>= setMethod PUT
   >>= acceptJSON
   >>= setJSONBody prop
   >>= flip httpLbs mgr
-  >>= jsonContent "createProperty"
+  >>= \rsp -> case statusCode $ responseStatus rsp of
+    200 -> Right `liftM` jsonContent "createProperty" rsp
+    _   -> Left `liftM` jsonContent "createProperty" rsp
