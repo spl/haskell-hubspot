@@ -92,17 +92,27 @@ type Scope = ByteString
 
 --------------------------------------------------------------------------------
 
+-- | This represents a contact property (or field) object.
+--
+-- Ideally, we would use enumberations for 'cpType' and 'cpFieldType'; however,
+-- we have observed that HubSpot does not guarantee the values of these fields.
+-- You may wish to use the aeson conversion functions yourself -- just be wary
+-- of parsing failure.
+--
+-- https://developers.hubspot.com/docs/methods/contacts/create_property
+
 data ContactProperty = ContactProperty
   { cpName          :: !Text
   , cpLabel         :: !Text
   , cpDescription   :: !Text
   , cpGroupName     :: !Text
-  , cpType          :: !ContactPropertyType
-  , cpFieldType     :: !ContactPropertyFieldType
+  , cpType          :: !Text -- ^ See 'ContactPropertyType'.
+  , cpFieldType     :: !Text -- ^ See 'ContactPropertyFieldType'.
   , cpFormField     :: !Bool
   , cpDisplayOrder  :: !Int
   , cpOptions       :: ![ContactPropertyOption]
   }
+  deriving (Show)
 
 data ContactPropertyType
   = CPTString
@@ -128,6 +138,7 @@ data ContactPropertyOption = ContactPropertyOption
   , cpoValue        :: !Text
   , cpoDisplayOrder :: !Int
   }
+  deriving (Show)
 
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
