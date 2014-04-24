@@ -5,6 +5,7 @@ module Web.HubSpot.Internal where
 import Web.HubSpot.Common
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TS
+import qualified Data.HashMap.Strict as HM
 
 --------------------------------------------------------------------------------
 
@@ -192,9 +193,36 @@ data ContactPropertyOption = ContactPropertyOption
   deriving (Show)
 
 --------------------------------------------------------------------------------
+
+data Group = Group
+  { pgName         :: !Text
+  , pgDisplayName  :: !Text
+  , pgDisplayOrder :: !Int
+  }
+  deriving Show
+
+data GroupProperties = GroupProperties
+  { gpGroup      :: !Group
+  , gpProperties :: ![ContactProperty]
+  }
+  deriving Show
+
+instance ToJSON GroupProperties where
+  toJSON GroupProperties {..} = Object $ group <> props
+    where
+      Object group = toJSON gpGroup
+      props = HM.singleton "properties" $ toJSON gpProperties
+
+instance FromJSON GroupProperties where
+  parseJSON = withObject "GroupProperties" $ \o -> do
+    GroupProperties <$> parseJSON (Object o)
+                    <*> o .: "properties"
+
+--------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
 
 deriveJSON_ ''ContactPropertyType       (defaultEnumOptions   3)
 deriveJSON_ ''ContactPropertyFieldType  (defaultEnumOptions   4)
 
 deriveJSON_ ''ContactPropertyOption     (defaultRecordOptions 3)
+deriveJSON_ ''Group                     (defaultRecordOptions 2)

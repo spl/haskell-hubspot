@@ -47,4 +47,5 @@ library
                         template-haskell,
                         text >= 0.11 && < 2.0,
                         time,
-                        transformers
+                        transformers,
+                        unordered-containers
