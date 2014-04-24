@@ -30,6 +30,7 @@ library
   exposed-modules:
                         Web.HubSpot
                         Web.HubSpot.Auth
+                        Web.HubSpot.Contacts.Properties
                         Web.HubSpot.Types
   other-modules:
                         Web.HubSpot.Common
@@ -43,6 +44,7 @@ library
                         http-conduit >= 2.0 && < 3.0,
                         http-types,
                         mime-types,
+                        template-haskell,
                         text >= 0.11 && < 2.0,
                         time,
                         transformers

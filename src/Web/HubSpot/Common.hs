@@ -6,6 +6,7 @@ module Web.HubSpot.Common
   , module Control.Monad
   , module Control.Monad.IO.Class
   , module Data.Aeson
+  , module Data.Aeson.TH
   , module Data.Aeson.Types
   , module Data.ByteString
   , module Data.Char
@@ -29,6 +30,7 @@ import Control.Arrow
 import Control.Monad hiding (forM, mapM, sequence)
 import Control.Monad.IO.Class
 import Data.Aeson
+import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types
 import Data.Char
 import Data.ByteString (ByteString)
@@ -43,6 +45,7 @@ import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 import Data.Time.Clock
 import Data.Traversable.Compat
+import Language.Haskell.TH (Name, Q, Dec)
 import Network.HTTP.Conduit hiding (parseUrl)
 import qualified Network.HTTP.Conduit
 import Network.HTTP.Types
@@ -56,6 +59,10 @@ import Data.ByteString.Lazy.Builder.ASCII (intDec)
 #endif
 
 --------------------------------------------------------------------------------
+
+headOnly :: (a -> a) -> [a] -> [a]
+headOnly _ []     = []
+headOnly f (x:xs) = f x : xs
 
 showBS:: ByteString -> String
 showBS = TS.unpack . TS.decodeUtf8
@@ -133,3 +140,19 @@ jsonContent msg rsp = do
           (decode' body)
   else
     fail $ msg ++ ": unknown content type: " ++ show contentType
+
+--------------------------------------------------------------------------------
+
+deriveJSON_ :: Name -> Options -> Q [Dec]
+deriveJSON_ = flip deriveJSON
+
+defaultEnumOptions :: Int -> Options
+defaultEnumOptions n = defaultOptions
+  { allNullaryToStringTag = True
+  , constructorTagModifier = map toLower . drop n
+  }
+
+defaultRecordOptions :: Int -> Options
+defaultRecordOptions n = defaultOptions
+  { fieldLabelModifier = headOnly toLower . drop n
+  }

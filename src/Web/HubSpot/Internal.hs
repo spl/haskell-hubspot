@@ -60,6 +60,10 @@ mkAuthFromResponse rsp = do
   tm <- liftIO getCurrentTime
   jsonContent "Auth" rsp >>= pAuth tm
 
+newAuthReq :: MonadIO m => Auth -> String -> m Request
+newAuthReq Auth {..} s = parseUrl s
+  >>= setQuery [("access_token", Just authAccessToken)]
+
 --------------------------------------------------------------------------------
 
 -- | Portal ID (sometimes called Hub ID or account number)
@@ -85,3 +89,51 @@ portalIdQueryVal = intToBS . fromPortalId
 
 -- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
 type Scope = ByteString
+
+--------------------------------------------------------------------------------
+
+data ContactProperty = ContactProperty
+  { cpName          :: !Text
+  , cpLabel         :: !Text
+  , cpDescription   :: !Text
+  , cpGroupName     :: !Text
+  , cpType          :: !ContactPropertyType
+  , cpFieldType     :: !ContactPropertyFieldType
+  , cpFormField     :: !Bool
+  , cpDisplayOrder  :: !Int
+  , cpOptions       :: ![ContactPropertyOption]
+  }
+
+data ContactPropertyType
+  = CPTString
+  | CPTNumber
+  | CPTBool
+  | CPTDateTime
+  | CPTEnumeration
+  deriving (Eq, Enum, Bounded, Read, Show)
+
+data ContactPropertyFieldType
+  = CPFTTextArea
+  | CPFTSelect
+  | CPFTText
+  | CPFTDate
+  | CPFTFile
+  | CPFTNumber
+  | CPFTRadio
+  | CPFTCheckBox
+  deriving (Eq, Enum, Bounded, Read, Show)
+
+data ContactPropertyOption = ContactPropertyOption
+  { cpoLabel        :: !Text
+  , cpoValue        :: !Text
+  , cpoDisplayOrder :: !Int
+  }
+
+--------------------------------------------------------------------------------
+-- Template Haskell declarations go at the end.
+
+deriveJSON_ ''ContactPropertyType       (defaultEnumOptions   3)
+deriveJSON_ ''ContactPropertyFieldType  (defaultEnumOptions   4)
+
+deriveJSON_ ''ContactPropertyOption     (defaultRecordOptions 3)
+deriveJSON_ ''ContactProperty           (defaultRecordOptions 2)
