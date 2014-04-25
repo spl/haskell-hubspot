@@ -1,5 +1,5 @@
 module Web.HubSpot.Contacts
-  ( getContacts
+  ( getAllContacts
   , getContact
   , ContactKey
   ) where
@@ -20,23 +20,23 @@ import qualified Data.Text as TS
 -- use to get the next page of contacts.
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_contacts
-getContacts
+getAllContacts
   :: MonadIO m
   => Auth
   -> Int  -- ^ Offset into list of all contacts, starts at 0
   -> Int  -- ^ Count (maximum: 100)
   -> Manager
   -> m ([Contact], Bool, Int)
-getContacts auth offset count mgr = do
-  when (count < 0 || count > 100) $ fail $ "getContacts: bad count: " ++ show count
-  when (offset < 0) $ fail $ "getContacts: bad offset: " ++ show offset
+getAllContacts auth offset count mgr = do
+  when (count < 0 || count > 100) $ fail $ "getAllContacts: bad count: " ++ show count
+  when (offset < 0) $ fail $ "getAllContacts: bad offset: " ++ show offset
   newAuthReq auth "https://api.hubapi.com/contacts/v1/lists/all/contacts/all"
   >>= addQuery [ ("count"     , Just $ intToBS count  )
                , ("vidOffset" , Just $ intToBS offset )
                ]
   >>= acceptJSON
   >>= flip httpLbs mgr
-  >>= liftM tuplePage . jsonContent "getContacts"
+  >>= liftM tuplePage . jsonContent "getAllContacts"
 
 -- | Get a contact profile by a key
 --
