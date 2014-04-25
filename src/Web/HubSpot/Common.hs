@@ -111,6 +111,10 @@ setMethod m req = return $ req { method = renderStdMethod m }
 setQuery :: Monad m => Query -> Request -> m Request
 setQuery q req = return $ req { queryString = renderQuery True q }
 
+addQuery :: Monad m => Query -> Request -> m Request
+addQuery q req = return $
+  req { queryString = renderQuery True $ parseQuery (queryString req) ++ q }
+
 addQueryItem :: Monad m => QueryItem -> Request -> m Request
 addQueryItem qi req = return $
   req { queryString = renderQuery True $ qi : parseQuery (queryString req) }
