@@ -1,8 +1,9 @@
 module Web.HubSpot.Types
-  ( ClientId
+  ( ClientId(..)
   , Auth(..)
-  , PortalId
+  , PortalId(..)
   , Scope
+  , ContactId(..)
   , Property(..)
   , PropertyType(..)
   , PropertyFieldType(..)

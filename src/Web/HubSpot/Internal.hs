@@ -115,6 +115,26 @@ instance FromJSON ErrorMessage where
 
 --------------------------------------------------------------------------------
 
+-- | Contact ID (sometimes called visitor ID or vid)
+--
+-- Note: Use the 'Num' instance for easy construction.
+newtype ContactId = ContactId { fromContactId :: Int }
+  deriving (Num)
+
+instance Read ContactId where
+  readsPrec n = map (first ContactId) . readsPrec n
+
+instance Show ContactId where
+  show = show . fromContactId
+
+instance ToJSON ContactId where
+  toJSON = toJSON . fromContactId
+
+instance FromJSON ContactId where
+  parseJSON = fmap ContactId . parseJSON
+
+--------------------------------------------------------------------------------
+
 -- | This represents a contact property (or field) object.
 --
 -- Ideally, we would use only enumerations for the values of 'propType' and

@@ -30,6 +30,7 @@ library
   exposed-modules:
                         Web.HubSpot
                         Web.HubSpot.Auth
+                        Web.HubSpot.Contacts
                         Web.HubSpot.Contacts.Properties
                         Web.HubSpot.Types
   other-modules:
