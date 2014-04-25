@@ -4,7 +4,6 @@ module Web.HubSpot.Contacts.Properties where
 
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
-import qualified Data.Text as TS
 
 --------------------------------------------------------------------------------
 

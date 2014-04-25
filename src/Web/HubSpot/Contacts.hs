@@ -1,6 +1,7 @@
 module Web.HubSpot.Contacts
   ( getAllContacts
   , getContact
+  , getContacts
   , ContactKey
   ) where
 
@@ -45,31 +46,46 @@ getAllContacts auth offset count mgr = do
 getContact :: (MonadIO m, ContactKey key) => Auth -> key -> Manager -> m Contact
 getContact auth key mgr =
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
-                  , contactRoute key
                   , contactKey key
+                  , contactKeyVal key
                   , "profile"
                   ]
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getContact"
 
+-- | Get multiple contact profiles with keys
+--
+-- A key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
+getContacts :: (MonadIO m, ContactKey key) => Auth -> [key] -> Manager -> m [Contact]
+getContacts _    []   _   = return []
+getContacts auth keys mgr = let key = contactKey (head keys) in
+  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
+                  , key `TS.snoc` 's'
+                  , "batch"
+                  ]
+  >>= addQuery (queryTextToQuery $ map ((key,) . Just . contactKeyVal) keys)
+  >>= acceptJSON
+  >>= flip httpLbs mgr
+  >>= jsonContent "getContacts"
+
 --------------------------------------------------------------------------------
 
 class ContactKey key where
-  contactRoute  :: key -> Text
   contactKey    :: key -> Text
+  contactKeyVal :: key -> Text
 
 -- | https://developers.hubspot.com/docs/methods/contacts/get_contact
 instance ContactKey ContactId where
-  contactRoute _ = "vid"
-  contactKey = TS.pack . show
+  contactKey _ = "vid"
+  contactKeyVal = TS.pack . show
 
 -- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_utk
 instance ContactKey UserToken where
-  contactRoute _ = "utk"
-  contactKey = TS.decodeUtf8 . fromUserToken
+  contactKey _ = "utk"
+  contactKeyVal = TS.decodeUtf8 . fromUserToken
 
 -- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_email
 instance ContactKey Text where
-  contactRoute _ = "email"
-  contactKey = id
+  contactKey _ = "email"
+  contactKeyVal = id
