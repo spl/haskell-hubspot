@@ -73,9 +73,7 @@ refreshAuth Auth {..} clientId mgr =
                           ]
       rsp <- httpLbs req mgr
       case statusCode $ responseStatus rsp of
-        200 -> liftM Right $
-          (,) `liftM` mkAuthFromResponse rsp
-              `ap`    jsonContent "refreshAuth: portalId" rsp
+        200 -> Right `liftM` mkAuthFromResponse rsp
         401 -> return $ Left "refreshAuth: Unauthorized request"
         410 -> return $ Left "refreshAuth: Requested an inactive portal"
         500 -> return $ Left "refreshAuth: HubSpot server error"

@@ -56,10 +56,11 @@ pAuth tm = either (fail . mappend "pAuth") return . parseEither (\o ->
        <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
        <*> (expireTime tm <$> o .: "expires_in"))
 
-mkAuthFromResponse :: MonadIO m => Response BL.ByteString -> m Auth
+mkAuthFromResponse :: MonadIO m => Response BL.ByteString -> m (Auth, PortalId)
 mkAuthFromResponse rsp = do
   tm <- liftIO getCurrentTime
-  jsonContent "Auth" rsp >>= pAuth tm
+  (,) `liftM` (jsonContent "Auth" rsp >>= pAuth tm)
+      `ap`    (portal_id `liftM` jsonContent "PortalId" rsp)
 
 newAuthReq :: MonadIO m => Auth -> String -> m Request
 newAuthReq Auth {..} s = parseUrl s
@@ -87,6 +88,9 @@ instance FromJSON PortalId where
 
 portalIdQueryVal :: PortalId -> ByteString
 portalIdQueryVal = intToBS . fromPortalId
+
+-- | An unexported, intermediate type used in refreshAuth
+newtype AuthPortalId = AuthPortalId { portal_id :: PortalId }
 
 --------------------------------------------------------------------------------
 
@@ -259,6 +263,8 @@ instance FromJSON Group where
 
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
+
+deriveJSON_ ''AuthPortalId      defaultOptions
 
 deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
 deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
