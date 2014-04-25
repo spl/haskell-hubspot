@@ -9,6 +9,8 @@ module Web.HubSpot.Contacts
 
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 
@@ -57,8 +59,13 @@ getContact auth key mgr =
 -- | Get multiple contact profiles with keys
 --
 -- A key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
-getContacts :: (MonadIO m, ContactKey key) => Auth -> [key] -> Manager -> m [Contact]
-getContacts _    []   _   = return []
+getContacts
+  :: (MonadIO m, ContactKey key)
+  => Auth
+  -> [key]
+  -> Manager
+  -> m (HashMap ContactId Contact)
+getContacts _    []   _   = return HM.empty
 getContacts auth keys mgr = let key = contactKey (head keys) in
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
                   , key `TS.snoc` 's'
@@ -67,7 +74,7 @@ getContacts auth keys mgr = let key = contactKey (head keys) in
   >>= addQuery (queryTextToQuery $ map ((key,) . Just . contactKeyVal) keys)
   >>= acceptJSON
   >>= flip httpLbs mgr
-  >>= jsonContent "getContacts"
+  >>= liftM (HM.fromList . map (first read) . HM.toList) . jsonContent "getContacts"
 
 --------------------------------------------------------------------------------
 

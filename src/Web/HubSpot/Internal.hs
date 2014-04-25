@@ -4,9 +4,10 @@ module Web.HubSpot.Internal where
 
 import Web.HubSpot.Common
 import qualified Data.ByteString.Lazy as BL
+import Data.HashMap.Strict (HashMap)
+import Data.Hashable (Hashable)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
-import Data.HashMap.Strict (HashMap)
 
 --------------------------------------------------------------------------------
 
@@ -125,7 +126,7 @@ instance FromJSON ErrorMessage where
 --
 -- Note: Use the 'Num' instance for easy construction.
 newtype ContactId = ContactId { fromContactId :: Int }
-  deriving (Num)
+  deriving (Eq, Num, Hashable)
 
 instance Read ContactId where
   readsPrec n = map (first ContactId) . readsPrec n
