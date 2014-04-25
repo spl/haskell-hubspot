@@ -68,6 +68,10 @@ getAllGroups auth mgr =
 
 -- | Create a property group
 --
+-- Note: This doesn't seem to create the properties if you include them in
+-- 'groupProperties', so it won't matter whether the list is empty or not
+-- (except in terms of the request body size).
+--
 -- https://developers.hubspot.com/docs/methods/contacts/create_group
 createGroup
   :: MonadIO m
