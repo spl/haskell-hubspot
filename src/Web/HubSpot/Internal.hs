@@ -78,9 +78,11 @@ instance Read PortalId where
 instance Show PortalId where
   show = show . fromPortalId
 
+instance ToJSON PortalId where
+  toJSON = toJSON . fromPortalId
+
 instance FromJSON PortalId where
-  parseJSON = withObject "PortalId" $ \o -> do
-    PortalId <$> o .: "portal_id"
+  parseJSON = fmap PortalId . parseJSON
 
 portalIdQueryVal :: PortalId -> ByteString
 portalIdQueryVal = intToBS . fromPortalId
@@ -197,7 +199,7 @@ data Group = Group
   { groupName         :: !Text
   , groupDisplayName  :: !Text
   , groupDisplayOrder :: !Int
-  , groupPortalId     :: !Int
+  , groupPortalId     :: !PortalId
   , groupProperties   :: ![Property] -- ^ This list is empty if no properties field is available.
   }
   deriving Show
