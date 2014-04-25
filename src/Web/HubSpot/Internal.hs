@@ -5,6 +5,7 @@ module Web.HubSpot.Internal where
 import Web.HubSpot.Common
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TS
+import Data.HashMap.Strict (HashMap)
 
 --------------------------------------------------------------------------------
 
@@ -133,6 +134,21 @@ instance ToJSON ContactId where
 instance FromJSON ContactId where
   parseJSON = fmap ContactId . parseJSON
 
+-- | A contact profile from HubSpot
+--
+-- Note: This is a simple type synonym. We should use a real data type.
+type Contact = HashMap Text Value
+
+-- | An unexported, intermediate type used in getContacts
+data ContactsPage = ContactsPage
+  { contacts   :: ![Contact]
+  , has_more   :: !Bool
+  , vid_offset :: !Int
+  }
+
+tuplePage :: ContactsPage -> ([Contact], Bool, Int)
+tuplePage (ContactsPage a b c) = (a, b, c)
+
 --------------------------------------------------------------------------------
 
 -- | This represents a contact property (or field) object.
@@ -248,3 +264,6 @@ deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
 deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
 
 deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
+
+deriveJSON_ ''ContactsPage
+  defaultOptions { fieldLabelModifier = map (\c -> if c == '_' then '-' else c) }
