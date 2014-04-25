@@ -65,3 +65,20 @@ getAllGroupProperties auth mgr =
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getAllGroupProperties"
+
+-- | Create a property group
+--
+-- https://developers.hubspot.com/docs/methods/contacts/create_group
+createGroup
+  :: MonadIO m
+  => Auth
+  -> Group
+  -> Manager
+  -> m Group
+createGroup auth group mgr =
+  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/groups/" <> groupName group)
+  >>= setMethod PUT
+  >>= acceptJSON
+  >>= setJSONBody group
+  >>= flip httpLbs mgr
+  >>= jsonContent "createGroup"
