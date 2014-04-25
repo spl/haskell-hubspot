@@ -45,7 +45,7 @@ getGroupProperties
   => Auth
   -> Text  -- ^ Group name
   -> Manager
-  -> m GroupProperties
+  -> m Group
 getGroupProperties auth groupName mgr =
   newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/groups/" <> groupName)
   >>= acceptJSON
@@ -59,7 +59,7 @@ getAllGroupProperties
   :: MonadIO m
   => Auth
   -> Manager
-  -> m [GroupProperties]
+  -> m [Group]
 getAllGroupProperties auth mgr =
   newAuthReq auth "https://api.hubapi.com/contacts/v1/groups"
   >>= acceptJSON

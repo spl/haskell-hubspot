@@ -81,6 +81,23 @@ readMay s = case [x | (x, t) <- reads s, ("", "") <- lex t] of
 
 --------------------------------------------------------------------------------
 
+eitherToJSON :: (ToJSON a, ToJSON b) => Either a b -> Value
+eitherToJSON = either toJSON toJSON
+
+pairIf :: ToJSON a =>(a -> Bool) ->  Text -> a -> [Pair]
+pairIf cond name value | cond value = [(name .= value)]
+                       | otherwise  = []
+
+-- | Parse alternatives: first try 'Right', then 'Left'
+(.:^) :: (FromJSON a, FromJSON b) => Object -> Text -> Parser (Either a b)
+obj .:^ key = Right <$> obj .: key <|> Left <$> obj .: key
+
+-- | Parse an optional list: if the field is not there, the list is empty.
+(.:*) :: FromJSON a => Object -> Text -> Parser [a]
+obj .:* key = obj .: key <|> return []
+
+--------------------------------------------------------------------------------
+
 parseUrl :: MonadIO m => String -> m Request
 parseUrl = liftIO . Network.HTTP.Conduit.parseUrl
 

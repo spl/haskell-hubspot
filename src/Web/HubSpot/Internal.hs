@@ -5,7 +5,6 @@ module Web.HubSpot.Internal where
 import Web.HubSpot.Common
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TS
-import qualified Data.HashMap.Strict as HM
 
 --------------------------------------------------------------------------------
 
@@ -134,9 +133,6 @@ data Property = Property
   }
   deriving (Show)
 
-eitherToJSON :: (ToJSON a, ToJSON b) => Either a b -> Value
-eitherToJSON = either toJSON toJSON
-
 instance ToJSON Property where
   toJSON Property {..} = object
     [ "name"         .= toJSON propName
@@ -150,21 +146,17 @@ instance ToJSON Property where
     , "options"      .= toJSON propOptions
     ]
 
--- | Parse alternatives: first 'Right', then 'Left'
-parseAlt :: (FromJSON a, FromJSON b) => Object -> Text -> Parser (Either a b)
-parseAlt o name = Right <$> o .: name <|> Left <$> o .: name
-
 instance FromJSON Property where
   parseJSON = withObject "Property" $ \o -> do
-    Property <$> o .: "name"
-             <*> o .: "label"
-             <*> o .: "description"
-             <*> o .: "groupName"
-             <*> parseAlt o "type"
-             <*> parseAlt o "fieldType"
-             <*> o .: "formField"
-             <*> o .: "displayOrder"
-             <*> o .: "options"
+    Property <$> o .:  "name"
+             <*> o .:  "label"
+             <*> o .:  "description"
+             <*> o .:  "groupName"
+             <*> o .:^ "type"
+             <*> o .:^ "fieldType"
+             <*> o .:  "formField"
+             <*> o .:  "displayOrder"
+             <*> o .:  "options"
 
 data PropertyType
   = PTString
@@ -194,29 +186,38 @@ data PropertyOption = PropertyOption
 
 --------------------------------------------------------------------------------
 
+-- | A property group.
+--
+-- In some cases, the group object returned from HubSpot does not have a
+-- @properties@ field. Instead of using a separate type for those cases, we
+-- simply return a 'Group' value with an empty 'groupProperties' list.
+--
+-- https://developers.hubspot.com/docs/methods/contacts/create_group
 data Group = Group
-  { pgName         :: !Text
-  , pgDisplayName  :: !Text
-  , pgDisplayOrder :: !Int
+  { groupName         :: !Text
+  , groupDisplayName  :: !Text
+  , groupDisplayOrder :: !Int
+  , groupPortalId     :: !Int
+  , groupProperties   :: ![Property] -- ^ This list is empty if no properties field is available.
   }
   deriving Show
 
-data GroupProperties = GroupProperties
-  { gpGroup      :: !Group
-  , gpProperties :: ![Property]
-  }
-  deriving Show
+instance ToJSON Group where
+  toJSON Group {..} = object $
+    [ "name"         .= groupName
+    , "displayName"  .= groupDisplayName
+    , "displayOrder" .= groupDisplayOrder
+    , "portalId"     .= groupPortalId
+    ] ++
+    (pairIf (not . null) "properties" groupProperties) -- Only included if not empty
 
-instance ToJSON GroupProperties where
-  toJSON GroupProperties {..} = Object $ group <> props
-    where
-      Object group = toJSON gpGroup
-      props = HM.singleton "properties" $ toJSON gpProperties
-
-instance FromJSON GroupProperties where
-  parseJSON = withObject "GroupProperties" $ \o -> do
-    GroupProperties <$> parseJSON (Object o)
-                    <*> o .: "properties"
+instance FromJSON Group where
+  parseJSON = withObject "Group" $ \o -> do
+    Group <$> o .:  "name"
+          <*> o .:  "displayName"
+          <*> o .:  "displayOrder"
+          <*> o .:  "portalId"
+          <*> o .:* "properties"  -- Empty if not found
 
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
@@ -225,4 +226,3 @@ deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
 deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
 
 deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
-deriveJSON_ ''Group             (defaultRecordOptions 2)
