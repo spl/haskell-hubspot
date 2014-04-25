@@ -32,7 +32,7 @@ instance ToJSON Auth where
   toJSON (Auth {..}) = object
     [ "access_token"  .= (String . TS.decodeUtf8 $ authAccessToken)
     , "refresh_token" .= (String . TS.decodeUtf8 <$> authRefreshToken)
-    , "expires_in"    .= toJSON authExpiresIn
+    , "expires_in"    .= authExpiresIn
     ]
 
 instance FromJSON Auth where
@@ -135,15 +135,15 @@ data Property = Property
 
 instance ToJSON Property where
   toJSON Property {..} = object
-    [ "name"         .= toJSON propName
-    , "label"        .= toJSON propLabel
-    , "description"  .= toJSON propDescription
-    , "groupName"    .= toJSON propGroupName
+    [ "name"         .= propName
+    , "label"        .= propLabel
+    , "description"  .= propDescription
+    , "groupName"    .= propGroupName
     , "type"         .= eitherToJSON propType
     , "fieldType"    .= eitherToJSON propFieldType
-    , "formField"    .= toJSON propFormField
-    , "displayOrder" .= toJSON propDisplayOrder
-    , "options"      .= toJSON propOptions
+    , "formField"    .= propFormField
+    , "displayOrder" .= propDisplayOrder
+    , "options"      .= propOptions
     ]
 
 instance FromJSON Property where
