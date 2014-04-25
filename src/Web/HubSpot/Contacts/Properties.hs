@@ -11,12 +11,12 @@ import qualified Data.Text as TS
 -- | Get all contact properties (fields)
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_properties
-getProperties :: MonadIO m => Auth -> Manager -> m [Property]
-getProperties auth mgr =
+getAllProperties :: MonadIO m => Auth -> Manager -> m [Property]
+getAllProperties auth mgr =
   newAuthReq auth "https://api.hubapi.com/contacts/v1/properties"
   >>= acceptJSON
   >>= flip httpLbs mgr
-  >>= jsonContent "getProperties"
+  >>= jsonContent "getAllProperties"
 
 -- | Create a new contact property (field)
 --
@@ -40,31 +40,31 @@ createProperty auth prop mgr =
 -- | Get property groups for a given group
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_groups
-getGroupProperties
+getGroups
   :: MonadIO m
   => Auth
   -> Text  -- ^ Group name
   -> Manager
   -> m Group
-getGroupProperties auth groupName mgr =
-  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/groups/" <> groupName)
+getGroups auth name mgr =
+  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/groups/" <> name)
   >>= acceptJSON
   >>= flip httpLbs mgr
-  >>= jsonContent "getGroupProperties"
+  >>= jsonContent "getGroups"
 
--- | Get all group properties
+-- | Get all property groups
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_groups
-getAllGroupProperties
+getAllGroups
   :: MonadIO m
   => Auth
   -> Manager
   -> m [Group]
-getAllGroupProperties auth mgr =
+getAllGroups auth mgr =
   newAuthReq auth "https://api.hubapi.com/contacts/v1/groups"
   >>= acceptJSON
   >>= flip httpLbs mgr
-  >>= jsonContent "getAllGroupProperties"
+  >>= jsonContent "getAllGroups"
 
 -- | Create a property group
 --
