@@ -4,6 +4,7 @@ module Web.HubSpot.Internal where
 
 import Web.HubSpot.Common
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 import Data.HashMap.Strict (HashMap)
 
@@ -62,8 +63,8 @@ mkAuthFromResponse rsp = do
   (,) `liftM` (jsonContent "Auth" rsp >>= pAuth tm)
       `ap`    (portal_id `liftM` jsonContent "PortalId" rsp)
 
-newAuthReq :: MonadIO m => Auth -> String -> m Request
-newAuthReq Auth {..} s = parseUrl s
+newAuthReq :: MonadIO m => Auth -> [Text] -> m Request
+newAuthReq Auth {..} pieces = parseUrl (TS.unpack $ TS.intercalate "/" pieces)
   >>= setQuery [("access_token", Just authAccessToken)]
 
 --------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ import qualified Data.Text as TS
 -- https://developers.hubspot.com/docs/methods/contacts/get_properties
 getAllProperties :: MonadIO m => Auth -> Manager -> m [Property]
 getAllProperties auth mgr =
-  newAuthReq auth "https://api.hubapi.com/contacts/v1/properties"
+  newAuthReq auth ["https://api.hubapi.com/contacts/v1/properties"]
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getAllProperties"
@@ -28,7 +28,9 @@ createProperty
   -> Manager
   -> m (Either ErrorMessage Property)
 createProperty auth prop mgr =
-  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/properties/" <> propName prop)
+  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/properties"
+                  , propName prop
+                  ]
   >>= setMethod PUT
   >>= acceptJSON
   >>= setJSONBody prop
@@ -47,7 +49,9 @@ getGroups
   -> Manager
   -> m Group
 getGroups auth name mgr =
-  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/groups/" <> name)
+  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/groups"
+                  , name
+                  ]
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getGroups"
@@ -61,7 +65,7 @@ getAllGroups
   -> Manager
   -> m [Group]
 getAllGroups auth mgr =
-  newAuthReq auth "https://api.hubapi.com/contacts/v1/groups"
+  newAuthReq auth ["https://api.hubapi.com/contacts/v1/groups"]
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getAllGroups"
@@ -80,7 +84,9 @@ createGroup
   -> Manager
   -> m Group
 createGroup auth group mgr =
-  newAuthReq auth (TS.unpack $ "https://api.hubapi.com/contacts/v1/groups/" <> groupName group)
+  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/groups"
+                  , groupName group
+                  ]
   >>= setMethod PUT
   >>= acceptJSON
   >>= setJSONBody group

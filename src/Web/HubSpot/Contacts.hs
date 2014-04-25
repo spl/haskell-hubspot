@@ -9,6 +9,7 @@ module Web.HubSpot.Contacts
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
 import qualified Data.Text as TS
+import qualified Data.Text.Encoding as TS
 
 --------------------------------------------------------------------------------
 
@@ -30,7 +31,7 @@ getAllContacts
 getAllContacts auth offset count mgr = do
   when (count < 0 || count > 100) $ fail $ "getAllContacts: bad count: " ++ show count
   when (offset < 0) $ fail $ "getAllContacts: bad offset: " ++ show offset
-  newAuthReq auth "https://api.hubapi.com/contacts/v1/lists/all/contacts/all"
+  newAuthReq auth ["https://api.hubapi.com/contacts/v1/lists/all/contacts/all"]
   >>= addQuery [ ("count"     , Just $ intToBS count  )
                , ("vidOffset" , Just $ intToBS offset )
                ]
@@ -43,9 +44,11 @@ getAllContacts auth offset count mgr = do
 -- The key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
 getContact :: (MonadIO m, ContactKey key) => Auth -> key -> Manager -> m Contact
 getContact auth key mgr =
-  newAuthReq auth (  "https://api.hubapi.com/contacts/v1/contact/vid/"
-                  <> mkGetContactRoute key
-                  <> "/profile")
+  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
+                  , contactRoute key
+                  , contactKey key
+                  , "profile"
+                  ]
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getContact"
@@ -53,16 +56,20 @@ getContact auth key mgr =
 --------------------------------------------------------------------------------
 
 class ContactKey key where
-  mkGetContactRoute :: key -> String
+  contactRoute  :: key -> Text
+  contactKey    :: key -> Text
 
 -- | https://developers.hubspot.com/docs/methods/contacts/get_contact
 instance ContactKey ContactId where
-  mkGetContactRoute = mappend "vid/" . show
+  contactRoute _ = "vid"
+  contactKey = TS.pack . show
 
 -- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_utk
 instance ContactKey UserToken where
-  mkGetContactRoute = mappend "utk/" . show
+  contactRoute _ = "utk"
+  contactKey = TS.decodeUtf8 . fromUserToken
 
 -- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_email
 instance ContactKey Text where
-  mkGetContactRoute = mappend "email/" . TS.unpack
+  contactRoute _ = "email"
+  contactKey = id
