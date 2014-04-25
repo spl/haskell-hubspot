@@ -138,6 +138,20 @@ instance ToJSON ContactId where
 instance FromJSON ContactId where
   parseJSON = fmap ContactId . parseJSON
 
+--------------------------------------------------------------------------------
+
+-- | Contact User Token (sometimes called HubSpot cookie or hubspotutk)
+--
+-- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
+-- construction.
+newtype UserToken = UserToken { fromUserToken :: ByteString }
+  deriving IsString
+
+instance Show UserToken where
+  show = showBS . fromUserToken
+
+--------------------------------------------------------------------------------
+
 -- | A contact profile from HubSpot
 --
 -- Note: This is a simple type synonym. We should use a real data type.

@@ -1,12 +1,14 @@
 module Web.HubSpot.Contacts
   ( getContacts
   , getContact
+  , ContactKey
   ) where
 
 --------------------------------------------------------------------------------
 
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
+import qualified Data.Text as TS
 
 --------------------------------------------------------------------------------
 
@@ -36,14 +38,31 @@ getContacts auth offset count mgr = do
   >>= flip httpLbs mgr
   >>= liftM tuplePage . jsonContent "getContacts"
 
--- | Get a contact profile by its unique contact ID
+-- | Get a contact profile by a key
 --
--- https://developers.hubspot.com/docs/methods/contacts/get_contact
-getContact :: MonadIO m => Auth -> ContactId -> Manager -> m Contact
-getContact auth contactId mgr =
+-- The key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
+getContact :: (MonadIO m, ContactKey key) => Auth -> key -> Manager -> m Contact
+getContact auth key mgr =
   newAuthReq auth (  "https://api.hubapi.com/contacts/v1/contact/vid/"
-                  <> show contactId
+                  <> mkGetContactRoute key
                   <> "/profile")
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= jsonContent "getContact"
+
+--------------------------------------------------------------------------------
+
+class ContactKey key where
+  mkGetContactRoute :: key -> String
+
+-- | https://developers.hubspot.com/docs/methods/contacts/get_contact
+instance ContactKey ContactId where
+  mkGetContactRoute = mappend "vid/" . show
+
+-- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_utk
+instance ContactKey UserToken where
+  mkGetContactRoute = mappend "utk/" . show
+
+-- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_email
+instance ContactKey Text where
+  mkGetContactRoute = mappend "email/" . TS.unpack
