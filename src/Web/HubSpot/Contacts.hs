@@ -21,11 +21,11 @@ import Web.HubSpot.Internal
 getContacts
   :: MonadIO m
   => Auth
-  -> Int  -- ^ Count (maximum: 100)
   -> Int  -- ^ Offset into list of all contacts, starts at 0
+  -> Int  -- ^ Count (maximum: 100)
   -> Manager
   -> m ([Contact], Bool, Int)
-getContacts auth count offset mgr = do
+getContacts auth offset count mgr = do
   when (count < 0 || count > 100) $ fail $ "getContacts: bad count: " ++ show count
   when (offset < 0) $ fail $ "getContacts: bad offset: " ++ show offset
   newAuthReq auth "https://api.hubapi.com/contacts/v1/lists/all/contacts/all"
