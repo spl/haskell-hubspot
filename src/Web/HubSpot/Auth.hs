@@ -9,6 +9,7 @@ module Web.HubSpot.Auth
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
 import qualified Data.ByteString as BS
+import qualified Data.Text.Encoding as TS
 
 --------------------------------------------------------------------------------
 
@@ -25,56 +26,71 @@ makeAuthUrl
   -> ByteString
 makeAuthUrl clientId portalId redirectUrl scopes = mconcat
   [ "https://app.hubspot.com/auth/authenticate"
-  , renderQuery True
-      [ ( "client_id"    , Just $ fromClientId clientId     )
-      , ( "portalId"     , Just $ portalIdQueryVal portalId )
-      , ( "redirect_uri" , Just $ redirectUrl               )
-      ]
+  , renderQuery True $ ("redirect_uri", Just redirectUrl') : clientPortalQuery
     -- Scopes are not rendered as above because that would
     -- percent-encode the "+".
   , "&scope="
   , BS.intercalate "+" $ map (urlEncode True) scopes
   ]
+  where
+    clientPortalQuery =
+      [ ( "client_id" , Just $ fromClientId clientId             )
+      , ( "portalId"  , Just $ intToBS $ fromPortalId $ portalId )
+      ]
+    -- Include the client and portal IDs in the redirect URL for 'parseAuth'.
+    redirectUrl' = case BS.breakByte 63 {- '?' -} redirectUrl of
+      (url, query) -> url <> renderQuery True (clientPortalQuery ++ parseQuery query)
 
 -- | Parse the query provided by HubSpot via the redirect URL given to
 -- 'makeAuthUrl'. If authentication was successful, the 'Right' result contains
 -- the access token, optional refresh token, and expiration time of the access
 -- token. If authentication failed, the 'Left' result contains an error message.
 parseAuth :: MonadIO m => Query -> m (Either ByteString Auth)
-parseAuth q = sequence $ mkAuth <$> parseAuthSimple q
-
--- | Do the same as 'parseAuth', but provide the number of seconds until
--- expiration without calculating the actual expiration time.
-parseAuthSimple :: Query -> Either ByteString (ByteString, Maybe ByteString, Int)
-parseAuthSimple q =
-  maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
-    access_token <- lookupQ "access_token" q
-    expires_in <- join $ intFromBS <$> lookupQ "expires_in" q
-    return (access_token, lookupQ "refresh_token" q, expires_in)
-  where
-    err = "parseAuthSimple: failed to parse query: " <> renderQuery False q
+parseAuth q = do
+  let err = "parseAuth: failed to parse query: " <> renderQuery False q
+  tm <- liftIO getCurrentTime
+  return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
+    Auth <$> (ClientId <$> lookupQ "client_id" q)
+         <*> (PortalId <$> join (intFromBS <$> lookupQ "portalId" q))
+         <*> (AccessToken <$> lookupQ "access_token" q)
+         <*> (pure $ RefreshToken <$> lookupQ "refresh_token" q)
+         <*> (expireTime tm <$> join (intFromBS <$> lookupQ "expires_in" q))
 
 -- | Refresh the access token.
 refreshAuth
   :: MonadIO m
   => Auth
-  -> ClientId
   -> Manager
-  -> m (Either String (Auth, PortalId))
-refreshAuth Auth {..} clientId mgr =
+  -> m (Either String Auth)
+refreshAuth auth@Auth {..} mgr =
   case authRefreshToken of
     Nothing -> return $ Left "refreshAuth: No refresh_token provided"
     Just refreshToken -> do
       req <- parseUrl "https://api.hubapi.com/auth/v1/refresh" >>=
         acceptJSON >>=
-        setUrlEncodedBody [ ( "refresh_token" , refreshToken          )
-                          , ( "client_id"     , fromClientId clientId )
-                          , ( "grant_type"    , "refresh_token"       )
+        setUrlEncodedBody [ ( "refresh_token" , fromRefreshToken refreshToken )
+                          , ( "client_id"     , fromClientId authClientId     )
+                          , ( "grant_type"    , "refresh_token"               )
                           ]
       rsp <- httpLbs req mgr
       case statusCode $ responseStatus rsp of
-        200 -> Right `liftM` mkAuthFromResponse rsp
+        200 -> Right `liftM` (jsonContent "refreshAuth" rsp >>= parseRefreshAuth auth)
         401 -> return $ Left "refreshAuth: Unauthorized request"
         410 -> return $ Left "refreshAuth: Requested an inactive portal"
         500 -> return $ Left "refreshAuth: HubSpot server error"
         c   -> fail $ "refreshAuth: Unsupported HTTP status: " ++ show c
+
+--------------------------------------------------------------------------------
+
+expireTime :: UTCTime -> Int -> UTCTime
+expireTime tm sec = fromIntegral sec `addUTCTime` tm
+
+parseRefreshAuth :: MonadIO m => Auth -> Object -> m Auth
+parseRefreshAuth Auth {..} obj = do
+  tm <- liftIO getCurrentTime
+  either (fail . mappend "pAuth") return $ flip parseEither obj $ \o ->
+    Auth <$> pure authClientId
+         <*> o .: "portal_id"
+         <*> (AccessToken . TS.encodeUtf8 <$> o .: "access_token")
+         <*> (pure . RefreshToken . TS.encodeUtf8 <$> o .: "refresh_token")
+         <*> (expireTime tm <$> o .: "expires_in")

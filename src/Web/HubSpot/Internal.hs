@@ -3,11 +3,46 @@ module Web.HubSpot.Internal where
 --------------------------------------------------------------------------------
 
 import Web.HubSpot.Common
-import qualified Data.ByteString.Lazy as BL
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
+
+--------------------------------------------------------------------------------
+
+-- | Access token
+--
+-- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
+-- construction.
+newtype AccessToken = AccessToken { fromAccessToken :: ByteString }
+  deriving IsString
+
+instance Show AccessToken where
+  show = showBS . fromAccessToken
+
+instance ToJSON AccessToken where
+  toJSON = String . TS.decodeUtf8 . fromAccessToken
+
+instance FromJSON AccessToken where
+  parseJSON = fmap (AccessToken . TS.encodeUtf8) . parseJSON
+
+--------------------------------------------------------------------------------
+
+-- | Refresh token
+--
+-- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
+-- construction.
+newtype RefreshToken = RefreshToken { fromRefreshToken :: ByteString }
+  deriving IsString
+
+instance Show RefreshToken where
+  show = showBS . fromRefreshToken
+
+instance ToJSON RefreshToken where
+  toJSON = String . TS.decodeUtf8 . fromRefreshToken
+
+instance FromJSON RefreshToken where
+  parseJSON = fmap (RefreshToken . TS.encodeUtf8) . parseJSON
 
 --------------------------------------------------------------------------------
 
@@ -47,9 +82,6 @@ instance ToJSON PortalId where
 instance FromJSON PortalId where
   parseJSON = fmap PortalId . parseJSON
 
-portalIdQueryVal :: PortalId -> ByteString
-portalIdQueryVal = intToBS . fromPortalId
-
 -- | An unexported, intermediate type used in refreshAuth
 newtype AuthPortalId = AuthPortalId { portal_id :: PortalId }
 
@@ -62,48 +94,18 @@ type Scope = ByteString
 
 -- | Authentication information
 data Auth = Auth
-  { authAccessToken  :: ByteString       -- ^ Access token
-  , authRefreshToken :: Maybe ByteString -- ^ Refresh token for "offline" scope
-  , authExpiresIn    :: UTCTime          -- ^ Expiration time of of the access token
+  { authClientId     :: !ClientId             -- ^ HubSpot app identifier
+  , authPortalId     :: !PortalId             -- ^ HubSpot user identifier
+  , authAccessToken  :: !AccessToken          -- ^ Access token for OAuth
+  , authRefreshToken :: !(Maybe RefreshToken) -- ^ Only for "offline" scope
+  , authExpiresIn    :: !UTCTime              -- ^ Expiration time of of the access token
   }
   deriving Show
 
-instance ToJSON Auth where
-  toJSON (Auth {..}) = object
-    [ "access_token"  .= (String . TS.decodeUtf8 $ authAccessToken)
-    , "refresh_token" .= (String . TS.decodeUtf8 <$> authRefreshToken)
-    , "expires_in"    .= authExpiresIn
-    ]
-
-instance FromJSON Auth where
-  parseJSON = withObject "Auth" $ \o -> do
-    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
-         <*> (fmap TS.encodeUtf8 <$> o .: "refresh_token")
-         <*> o .: "expires_in"
-
-expireTime :: UTCTime -> Int -> UTCTime
-expireTime tm sec = fromIntegral sec `addUTCTime` tm
-
-mkAuth :: MonadIO m => (ByteString, Maybe ByteString, Int) -> m Auth
-mkAuth (at,rt,sec) = do
-  tm <- liftIO getCurrentTime
-  return $ Auth at rt $ expireTime tm sec
-
-pAuth :: Monad m => UTCTime -> Object -> m Auth
-pAuth tm = either (fail . mappend "pAuth") return . parseEither (\o ->
-  Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
-       <*> (Just . TS.encodeUtf8 <$> o .: "refresh_token")
-       <*> (expireTime tm <$> o .: "expires_in"))
-
-mkAuthFromResponse :: MonadIO m => Response BL.ByteString -> m (Auth, PortalId)
-mkAuthFromResponse rsp = do
-  tm <- liftIO getCurrentTime
-  (,) `liftM` (jsonContent "Auth" rsp >>= pAuth tm)
-      `ap`    (portal_id `liftM` jsonContent "PortalId" rsp)
-
+-- | Create a new 'Request' with authentication using the access token
 newAuthReq :: MonadIO m => Auth -> [Text] -> m Request
 newAuthReq Auth {..} pieces = parseUrl (TS.unpack $ TS.intercalate "/" pieces)
-  >>= setQuery [("access_token", Just authAccessToken)]
+  >>= setQuery [("access_token", Just $ fromAccessToken authAccessToken)]
 
 --------------------------------------------------------------------------------
 
@@ -314,6 +316,7 @@ deriveJSON_ ''AuthPortalId      defaultOptions
 deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
 deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
 
+deriveJSON_ ''Auth              (defaultRecordOptions 4)
 deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
 deriveJSON_ ''PropValueList     (defaultRecordOptions 3)
 
