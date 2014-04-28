@@ -56,29 +56,29 @@ parseAuth q = do
          <*> pure (lookupQ "refresh_token" q)
          <*> (expireTime tm <$> join (intFromBS <$> lookupQ "expires_in" q))
 
--- | Refresh the access token.
+-- | Refresh the access token
+--
+-- Note: If the 'Auth' argument does not have a refresh token, 'refreshAuth'
+-- will throw a 'NoRefreshToken' exception.
 refreshAuth
   :: MonadIO m
   => Auth
   -> Manager
-  -> m (Either String Auth)
+  -> m Auth
 refreshAuth auth@Auth {..} mgr =
   case authRefreshToken of
-    Nothing -> return $ Left "refreshAuth: No refresh_token provided"
+    Nothing -> liftIO $ throwIO NoRefreshToken
     Just refreshToken -> do
-      req <- parseUrl "https://api.hubapi.com/auth/v1/refresh" >>=
-        acceptJSON >>=
-        setUrlEncodedBody [ ( "refresh_token" , refreshToken    )
-                          , ( "client_id"     , authClientId    )
-                          , ( "grant_type"    , "refresh_token" )
-                          ]
-      rsp <- httpLbs req mgr
-      case statusCode $ responseStatus rsp of
-        200 -> Right `liftM` (jsonContent "refreshAuth" rsp >>= parseRefreshAuth auth)
-        401 -> return $ Left "refreshAuth: Unauthorized request"
-        410 -> return $ Left "refreshAuth: Requested an inactive portal"
-        500 -> return $ Left "refreshAuth: HubSpot server error"
-        c   -> fail $ "refreshAuth: Unsupported HTTP status: " ++ show c
+      parseUrl "https://api.hubapi.com/auth/v1/refresh"
+      >>= acceptJSON
+      >>= setUrlEncodedBody [ ( "refresh_token" , refreshToken    )
+                            , ( "client_id"     , authClientId    )
+                            , ( "grant_type"    , "refresh_token" )
+                            ]
+      >>= flip httpLbs mgr
+      >>= checkResponse
+      >>= jsonContent "refreshAuth"
+      >>= parseRefreshAuth auth
 
 --------------------------------------------------------------------------------
 

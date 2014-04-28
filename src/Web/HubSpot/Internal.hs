@@ -13,11 +13,13 @@ import Data.Typeable (Typeable)
 
 -- | Exceptions thrown by functions in this package.
 data HubSpotException
+    -- | A refresh was attempted, but no refresh token was provided.
+  = NoRefreshToken
     -- | HTTP Access Code 401 (Unauthorized) which indicates when an Access
     -- Token has expired. The response body is included.
     --
     -- See https://developers.hubspot.com/auth/oauth_apps
-  = UnauthorizedRequest !BL.ByteString
+  | UnauthorizedRequest !BL.ByteString
     -- | An unexpected HTTP response status with the response body
   | UnexpectedHttpResponse !Status !BL.ByteString
   deriving (Show, Typeable)
