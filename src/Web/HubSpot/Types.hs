@@ -5,6 +5,7 @@ module Web.HubSpot.Types
   , Scope
   , ContactId(..)
   , Property(..)
+  , PropertyValue(..)
   , PropertyType(..)
   , PropertyFieldType(..)
   , PropertyOption(..)

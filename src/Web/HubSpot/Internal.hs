@@ -244,6 +244,29 @@ data PropertyOption = PropertyOption
 
 --------------------------------------------------------------------------------
 
+-- | This is used to set the value of a property on a contact.
+data PropertyValue = PropertyValue
+  { pvName  :: !Text
+  , pvValue :: !Text
+  }
+
+instance ToJSON PropertyValue where
+  toJSON PropertyValue {..} = object
+    [ "property" .= pvName
+    , "value"    .= pvValue
+    ]
+
+instance FromJSON PropertyValue where
+  parseJSON = withObject "PropertyValue" $ \o -> do
+    PropertyValue <$> o .: "property"
+                  <*> o .: "value"
+
+-- | An unexported, intermediate type used for retrieving a list of
+-- 'PropertyValue's.
+data PropValueList = PropValueList { pvlProperties  :: ![PropertyValue] }
+
+--------------------------------------------------------------------------------
+
 -- | A property group.
 --
 -- In some cases, the group object returned from HubSpot does not have a
@@ -286,6 +309,7 @@ deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
 deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
 
 deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
+deriveJSON_ ''PropValueList     (defaultRecordOptions 3)
 
 deriveJSON_ ''ContactsPage
   defaultOptions { fieldLabelModifier = map (\c -> if c == '_' then '-' else c) }

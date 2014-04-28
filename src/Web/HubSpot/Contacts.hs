@@ -2,6 +2,7 @@ module Web.HubSpot.Contacts
   ( getAllContacts
   , getContact
   , getContacts
+  , updateContact
   , ContactKey
   ) where
 
@@ -75,6 +76,26 @@ getContacts auth keys mgr = let key = contactKey (head keys) in
   >>= acceptJSON
   >>= flip httpLbs mgr
   >>= liftM (HM.fromList . map (first read) . HM.toList) . jsonContent "getContacts"
+
+-- | Update a contact profile by a 'ContactId'
+updateContact
+  :: MonadIO m
+  => Auth
+  -> ContactId
+  -> [PropertyValue]
+  -> Manager
+  -> m ()
+updateContact auth contactId propValues mgr =
+  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact/vid"
+                  , contactKeyVal contactId
+                  , "profile"
+                  ]
+  >>= acceptJSON
+  >>= setJSONBody (PropValueList propValues)
+  >>= flip httpLbs mgr
+  >>= \rsp -> case statusCode $ responseStatus rsp of
+    204 -> return ()
+    _   -> return () -- ERROR!
 
 --------------------------------------------------------------------------------
 
