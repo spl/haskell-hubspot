@@ -32,6 +32,7 @@ generalRequest urlSegments modifyRequest processResponse Auth {..} mgr =
   >>= checkResponse
   >>= processResponse
 
+-- | Check the response HTTP status codes. Throw an exception if needed.
 checkResponse :: MonadIO m => Response BL.ByteString -> m (Response BL.ByteString)
 checkResponse rsp = do
   let status = responseStatus rsp
