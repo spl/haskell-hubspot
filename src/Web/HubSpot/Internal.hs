@@ -3,9 +3,36 @@ module Web.HubSpot.Internal where
 --------------------------------------------------------------------------------
 
 import Web.HubSpot.Common
+import qualified Data.ByteString.Lazy as BL
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable)
 import qualified Data.Text as TS
+import Data.Typeable (Typeable)
+
+--------------------------------------------------------------------------------
+
+-- | Exceptions thrown by functions in this package.
+data HubSpotException
+    -- | HTTP Access Code 401 (Unauthorized) which indicates when an Access
+    -- Token has expired. The response body is included.
+    --
+    -- See https://developers.hubspot.com/auth/oauth_apps
+  = UnauthorizedRequest !BL.ByteString
+    -- | An unexpected HTTP response status with the response body
+  | UnexpectedHttpResponse !Status !BL.ByteString
+  deriving (Show, Typeable)
+
+instance Exception HubSpotException
+
+checkResponse :: MonadIO m => Response BL.ByteString -> m (Response BL.ByteString)
+checkResponse rsp = do
+  let status = responseStatus rsp
+      body = responseBody rsp
+  case statusCode status of
+    200 -> return rsp
+    204 -> return rsp
+    401 -> liftIO $ throwIO $ UnauthorizedRequest body
+    _   -> liftIO $ throwIO $ UnexpectedHttpResponse status body
 
 --------------------------------------------------------------------------------
 

@@ -3,6 +3,7 @@ module Web.HubSpot.Common
   , module Prelude
   , module Control.Applicative
   , module Control.Arrow
+  , module Control.Exception
   , module Control.Monad
   , module Control.Monad.IO.Class
   , module Data.Aeson
@@ -27,6 +28,7 @@ module Web.HubSpot.Common
 import Prelude hiding (mapM, sequence)
 import Control.Applicative
 import Control.Arrow
+import Control.Exception
 import Control.Monad hiding (forM, mapM, sequence)
 import Control.Monad.IO.Class
 import Data.Aeson
