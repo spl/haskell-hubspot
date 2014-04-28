@@ -6,86 +6,20 @@ import Web.HubSpot.Common
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable)
 import qualified Data.Text as TS
-import qualified Data.Text.Encoding as TS
 
 --------------------------------------------------------------------------------
 
 -- | Access token
---
--- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
--- construction.
-newtype AccessToken = AccessToken { fromAccessToken :: ByteString }
-  deriving IsString
-
-instance Show AccessToken where
-  show = showBS . fromAccessToken
-
-instance ToJSON AccessToken where
-  toJSON = String . TS.decodeUtf8 . fromAccessToken
-
-instance FromJSON AccessToken where
-  parseJSON = fmap (AccessToken . TS.encodeUtf8) . parseJSON
-
---------------------------------------------------------------------------------
+type AccessToken = ByteString
 
 -- | Refresh token
---
--- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
--- construction.
-newtype RefreshToken = RefreshToken { fromRefreshToken :: ByteString }
-  deriving IsString
-
-instance Show RefreshToken where
-  show = showBS . fromRefreshToken
-
-instance ToJSON RefreshToken where
-  toJSON = String . TS.decodeUtf8 . fromRefreshToken
-
-instance FromJSON RefreshToken where
-  parseJSON = fmap (RefreshToken . TS.encodeUtf8) . parseJSON
-
---------------------------------------------------------------------------------
+type RefreshToken = ByteString
 
 -- | Client ID
---
--- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
--- construction.
-newtype ClientId = ClientId { fromClientId :: ByteString }
-  deriving IsString
-
-instance Show ClientId where
-  show = showBS . fromClientId
-
-instance ToJSON ClientId where
-  toJSON = String . TS.decodeUtf8 . fromClientId
-
-instance FromJSON ClientId where
-  parseJSON = fmap (ClientId . TS.encodeUtf8) . parseJSON
-
---------------------------------------------------------------------------------
+type ClientId = ByteString
 
 -- | Portal ID (sometimes called Hub ID or account number)
---
--- Note: Use the 'Num' instance for easy construction.
-newtype PortalId = PortalId { fromPortalId :: Int }
-  deriving Num
-
-instance Read PortalId where
-  readsPrec n = map (first PortalId) . readsPrec n
-
-instance Show PortalId where
-  show = show . fromPortalId
-
-instance ToJSON PortalId where
-  toJSON = toJSON . fromPortalId
-
-instance FromJSON PortalId where
-  parseJSON = fmap PortalId . parseJSON
-
--- | An unexported, intermediate type used in refreshAuth
-newtype AuthPortalId = AuthPortalId { portal_id :: PortalId }
-
---------------------------------------------------------------------------------
+type PortalId = Int
 
 -- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
 type Scope = ByteString
@@ -105,7 +39,7 @@ data Auth = Auth
 -- | Create a new 'Request' with authentication using the access token
 newAuthReq :: MonadIO m => Auth -> [Text] -> m Request
 newAuthReq Auth {..} pieces = parseUrl (TS.unpack $ TS.intercalate "/" pieces)
-  >>= setQuery [("access_token", Just $ fromAccessToken authAccessToken)]
+  >>= setQuery [("access_token", Just authAccessToken)]
 
 --------------------------------------------------------------------------------
 
@@ -311,12 +245,9 @@ instance FromJSON Group where
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
 
-deriveJSON_ ''AuthPortalId      defaultOptions
-
 deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
 deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
 
-deriveJSON_ ''Auth              (defaultRecordOptions 4)
 deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
 deriveJSON_ ''PropValueList     (defaultRecordOptions 3)
 

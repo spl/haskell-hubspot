@@ -34,8 +34,8 @@ makeAuthUrl clientId portalId redirectUrl scopes = mconcat
   ]
   where
     clientPortalQuery =
-      [ ( "client_id" , Just $ fromClientId clientId             )
-      , ( "portalId"  , Just $ intToBS $ fromPortalId $ portalId )
+      [ ( "client_id" , Just clientId             )
+      , ( "portalId"  , Just $ intToBS $ portalId )
       ]
     -- Include the client and portal IDs in the redirect URL for 'parseAuth'.
     redirectUrl' = case BS.breakByte 63 {- '?' -} redirectUrl of
@@ -50,10 +50,10 @@ parseAuth q = do
   let err = "parseAuth: failed to parse query: " <> renderQuery False q
   tm <- liftIO getCurrentTime
   return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
-    Auth <$> (ClientId <$> lookupQ "client_id" q)
-         <*> (PortalId <$> join (intFromBS <$> lookupQ "portalId" q))
-         <*> (AccessToken <$> lookupQ "access_token" q)
-         <*> (pure $ RefreshToken <$> lookupQ "refresh_token" q)
+    Auth <$> lookupQ "client_id" q
+         <*> join (intFromBS <$> lookupQ "portalId" q)
+         <*> lookupQ "access_token" q
+         <*> pure (lookupQ "refresh_token" q)
          <*> (expireTime tm <$> join (intFromBS <$> lookupQ "expires_in" q))
 
 -- | Refresh the access token.
@@ -68,9 +68,9 @@ refreshAuth auth@Auth {..} mgr =
     Just refreshToken -> do
       req <- parseUrl "https://api.hubapi.com/auth/v1/refresh" >>=
         acceptJSON >>=
-        setUrlEncodedBody [ ( "refresh_token" , fromRefreshToken refreshToken )
-                          , ( "client_id"     , fromClientId authClientId     )
-                          , ( "grant_type"    , "refresh_token"               )
+        setUrlEncodedBody [ ( "refresh_token" , refreshToken    )
+                          , ( "client_id"     , authClientId    )
+                          , ( "grant_type"    , "refresh_token" )
                           ]
       rsp <- httpLbs req mgr
       case statusCode $ responseStatus rsp of
@@ -91,6 +91,6 @@ parseRefreshAuth Auth {..} obj = do
   either (fail . mappend "pAuth") return $ flip parseEither obj $ \o ->
     Auth <$> pure authClientId
          <*> o .: "portal_id"
-         <*> (AccessToken . TS.encodeUtf8 <$> o .: "access_token")
-         <*> (pure . RefreshToken . TS.encodeUtf8 <$> o .: "refresh_token")
+         <*> (TS.encodeUtf8 <$> o .: "access_token")
+         <*> (pure . TS.encodeUtf8 <$> o .: "refresh_token")
          <*> (expireTime tm <$> o .: "expires_in")
