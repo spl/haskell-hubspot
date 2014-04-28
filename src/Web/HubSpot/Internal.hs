@@ -11,6 +11,39 @@ import Data.Typeable (Typeable)
 
 --------------------------------------------------------------------------------
 
+-- | This function contains the general flow of a function requesting something
+-- from HubSpot and processing the response. It handles setting the acccess
+-- token in the query, setting the appropriate Accept type, and checking the
+-- HTTP status code in the response.
+generalRequest
+  :: MonadIO m
+  => [Text]
+  -> (Request -> m Request)
+  -> (Response BL.ByteString -> m a)
+  -> Auth
+  -> Manager
+  -> m a
+generalRequest urlSegments modifyRequest processResponse Auth {..} mgr =
+  parseUrl (TS.unpack $ TS.intercalate "/" urlSegments)
+  >>= acceptJSON
+  >>= setQuery [("access_token", Just authAccessToken)]
+  >>= modifyRequest
+  >>= flip httpLbs mgr
+  >>= checkResponse
+  >>= processResponse
+
+checkResponse :: MonadIO m => Response BL.ByteString -> m (Response BL.ByteString)
+checkResponse rsp = do
+  let status = responseStatus rsp
+      body = responseBody rsp
+  case statusCode status of
+    200 -> return rsp
+    204 -> return rsp
+    401 -> liftIO $ throwIO $ UnauthorizedRequest body
+    _   -> liftIO $ throwIO $ UnexpectedHttpResponse status body
+
+--------------------------------------------------------------------------------
+
 -- | Exceptions thrown by functions in this package.
 data HubSpotException
     -- | A refresh was attempted, but no refresh token was provided.
@@ -25,16 +58,6 @@ data HubSpotException
   deriving (Show, Typeable)
 
 instance Exception HubSpotException
-
-checkResponse :: MonadIO m => Response BL.ByteString -> m (Response BL.ByteString)
-checkResponse rsp = do
-  let status = responseStatus rsp
-      body = responseBody rsp
-  case statusCode status of
-    200 -> return rsp
-    204 -> return rsp
-    401 -> liftIO $ throwIO $ UnauthorizedRequest body
-    _   -> liftIO $ throwIO $ UnexpectedHttpResponse status body
 
 --------------------------------------------------------------------------------
 
