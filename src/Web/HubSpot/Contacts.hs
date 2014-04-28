@@ -44,11 +44,9 @@ getAllContacts offset count auth mgr = do
   >>= liftM tuplePage . jsonContent "getAllContacts"
 
 -- | Get a contact profile by a key
---
--- The key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
 getContact
   :: (MonadIO m, ContactKey key)
-  => key
+  => key   -- ^ A 'ContactId', a 'UserToken', or a 'Text' email address
   -> Auth
   -> Manager
   -> m Contact
@@ -67,7 +65,7 @@ getContact key auth mgr =
 -- A key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
 getContacts
   :: (MonadIO m, ContactKey key)
-  => [key]
+  => [key]   -- ^ List of 'ContactId's, 'UserToken's, or 'Text' email addresses
   -> Auth
   -> Manager
   -> m (HashMap ContactId Contact)
