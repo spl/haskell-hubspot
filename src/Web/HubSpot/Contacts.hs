@@ -27,12 +27,12 @@ import qualified Data.Text.Encoding as TS
 -- https://developers.hubspot.com/docs/methods/contacts/get_contacts
 getAllContacts
   :: MonadIO m
-  => Auth
-  -> Int  -- ^ Offset into list of all contacts, starts at 0
+  => Int  -- ^ Offset into list of all contacts, starts at 0
   -> Int  -- ^ Count (maximum: 100)
+  -> Auth
   -> Manager
   -> m ([Contact], Bool, Int)
-getAllContacts auth offset count mgr = do
+getAllContacts offset count auth mgr = do
   when (count < 0 || count > 100) $ fail $ "getAllContacts: bad count: " ++ show count
   when (offset < 0) $ fail $ "getAllContacts: bad offset: " ++ show offset
   newAuthReq auth ["https://api.hubapi.com/contacts/v1/lists/all/contacts/all"]
@@ -46,8 +46,13 @@ getAllContacts auth offset count mgr = do
 -- | Get a contact profile by a key
 --
 -- The key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
-getContact :: (MonadIO m, ContactKey key) => Auth -> key -> Manager -> m Contact
-getContact auth key mgr =
+getContact
+  :: (MonadIO m, ContactKey key)
+  => key
+  -> Auth
+  -> Manager
+  -> m Contact
+getContact key auth mgr =
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
                   , contactKey key
                   , contactKeyVal key
@@ -62,12 +67,12 @@ getContact auth key mgr =
 -- A key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
 getContacts
   :: (MonadIO m, ContactKey key)
-  => Auth
-  -> [key]
+  => [key]
+  -> Auth
   -> Manager
   -> m (HashMap ContactId Contact)
-getContacts _    []   _   = return HM.empty
-getContacts auth keys mgr = let key = contactKey (head keys) in
+getContacts []   _    _   = return HM.empty
+getContacts keys auth mgr = let key = contactKey (head keys) in
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
                   , key `TS.snoc` 's'
                   , "batch"
@@ -80,12 +85,12 @@ getContacts auth keys mgr = let key = contactKey (head keys) in
 -- | Update a contact profile by a 'ContactId'
 updateContact
   :: MonadIO m
-  => Auth
-  -> ContactId
+  => ContactId
   -> [PropertyValue]
+  -> Auth
   -> Manager
   -> m ()
-updateContact auth contactId propValues mgr =
+updateContact contactId propValues auth mgr =
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact/vid"
                   , contactKeyVal contactId
                   , "profile"

@@ -10,7 +10,11 @@ import Web.HubSpot.Internal
 -- | Get all contact properties (fields)
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_properties
-getAllProperties :: MonadIO m => Auth -> Manager -> m [Property]
+getAllProperties
+  :: MonadIO m
+  => Auth
+  -> Manager
+  -> m [Property]
 getAllProperties auth mgr =
   newAuthReq auth ["https://api.hubapi.com/contacts/v1/properties"]
   >>= acceptJSON
@@ -22,11 +26,11 @@ getAllProperties auth mgr =
 -- https://developers.hubspot.com/docs/methods/contacts/create_property
 createProperty
   :: MonadIO m
-  => Auth
-  -> Property
+  => Property
+  -> Auth
   -> Manager
   -> m (Either ErrorMessage Property)
-createProperty auth prop mgr =
+createProperty prop auth mgr =
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/properties"
                   , propName prop
                   ]
@@ -43,11 +47,11 @@ createProperty auth prop mgr =
 -- https://developers.hubspot.com/docs/methods/contacts/get_groups
 getGroups
   :: MonadIO m
-  => Auth
-  -> Text  -- ^ Group name
+  => Text  -- ^ Group name
+  -> Auth
   -> Manager
   -> m Group
-getGroups auth name mgr =
+getGroups name auth mgr =
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/groups"
                   , name
                   ]
@@ -78,11 +82,11 @@ getAllGroups auth mgr =
 -- https://developers.hubspot.com/docs/methods/contacts/create_group
 createGroup
   :: MonadIO m
-  => Auth
-  -> Group
+  => Group
+  -> Auth
   -> Manager
   -> m Group
-createGroup auth group mgr =
+createGroup group auth mgr =
   newAuthReq auth [ "https://api.hubapi.com/contacts/v1/groups"
                   , groupName group
                   ]
