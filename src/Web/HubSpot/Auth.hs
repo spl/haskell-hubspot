@@ -2,6 +2,7 @@ module Web.HubSpot.Auth
   ( makeAuthUrl
   , parseAuth
   , refreshAuth
+  , withRefresh
   ) where
 
 --------------------------------------------------------------------------------
@@ -86,6 +87,23 @@ refreshAuth auth@Auth {..} mgr =
       >>= checkResponse
       >>= jsonContent "refreshAuth"
       >>= parseRefreshAuth auth
+
+-- | Given a function that requires authentication, first check if the access
+-- token has expired and, if needed, refresh the token. Then, run the function
+-- argument. Return the new 'Auth' if available along with the result of the
+-- argument.
+withRefresh
+  :: MonadIO m
+  => (Auth -> Manager -> m b)
+  -> Auth
+  -> Manager
+  -> m (Maybe Auth, b)
+withRefresh run auth@Auth {..} mgr = do
+  tm <- liftIO getCurrentTime
+  let expired = authExpiresIn `diffUTCTime` tm < 5 * 60 {- 5 minutes -}
+  auth' <- if expired then refreshAuth auth mgr else return auth
+  result <- run auth' mgr
+  return (if expired then Just auth' else Nothing, result)
 
 --------------------------------------------------------------------------------
 
