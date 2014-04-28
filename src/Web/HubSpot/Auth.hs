@@ -67,7 +67,14 @@ refreshAuth
   -> m Auth
 refreshAuth auth@Auth {..} mgr =
   case authRefreshToken of
-    Nothing -> liftIO $ throwIO NoRefreshToken
+    Nothing ->
+      -- We throw an exception in this case because it is simple. A more
+      -- type-safe approach would be to change 'Auth' to indicate whether it
+      -- includes a 'RefreshToken', and 'refreshAuth' could only be called when
+      -- it does. However, that would complicate types for what we expect is a
+      -- rare occurrence (calling 'refreshAuth' with an 'Auth' which doesn't
+      -- have a 'RefreshToken').
+      liftIO $ throwIO NoRefreshToken
     Just refreshToken -> do
       parseUrl "https://api.hubapi.com/auth/v1/refresh"
       >>= acceptJSON
