@@ -88,11 +88,6 @@ data Auth = Auth
   }
   deriving Show
 
--- | Create a new 'Request' with authentication using the access token
-newAuthReq :: MonadIO m => Auth -> [Text] -> m Request
-newAuthReq Auth {..} pieces = parseUrl (TS.unpack $ TS.intercalate "/" pieces)
-  >>= setQuery [("access_token", Just authAccessToken)]
-
 --------------------------------------------------------------------------------
 
 -- | Error message JSON object returned by HubSpot

@@ -15,11 +15,10 @@ getAllProperties
   => Auth
   -> Manager
   -> m [Property]
-getAllProperties auth mgr =
-  newAuthReq auth ["https://api.hubapi.com/contacts/v1/properties"]
-  >>= acceptJSON
-  >>= flip httpLbs mgr
-  >>= jsonContent "getAllProperties"
+getAllProperties = generalRequest
+  ["https://api.hubapi.com/contacts/v1/properties"]
+  return
+  (jsonContent "getAllProperties")
 
 -- | Create a new contact property (field)
 --
@@ -29,18 +28,11 @@ createProperty
   => Property
   -> Auth
   -> Manager
-  -> m (Either ErrorMessage Property)
-createProperty prop auth mgr =
-  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/properties"
-                  , propName prop
-                  ]
-  >>= setMethod PUT
-  >>= acceptJSON
-  >>= setJSONBody prop
-  >>= flip httpLbs mgr
-  >>= \rsp -> case statusCode $ responseStatus rsp of
-    200 -> Right `liftM` jsonContent "createProperty" rsp
-    _   -> Left `liftM` jsonContent "createProperty" rsp
+  -> m Property
+createProperty prop = generalRequest
+  ["https://api.hubapi.com/contacts/v1/properties", propName prop]
+  (setMethod PUT >=> setJSONBody prop)
+  (jsonContent "createProperty")
 
 -- | Get property groups for a given group
 --
@@ -51,13 +43,10 @@ getGroups
   -> Auth
   -> Manager
   -> m Group
-getGroups name auth mgr =
-  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/groups"
-                  , name
-                  ]
-  >>= acceptJSON
-  >>= flip httpLbs mgr
-  >>= jsonContent "getGroups"
+getGroups name = generalRequest
+  ["https://api.hubapi.com/contacts/v1/groups", name]
+  return
+  (jsonContent "getGroups")
 
 -- | Get all property groups
 --
@@ -67,11 +56,10 @@ getAllGroups
   => Auth
   -> Manager
   -> m [Group]
-getAllGroups auth mgr =
-  newAuthReq auth ["https://api.hubapi.com/contacts/v1/groups"]
-  >>= acceptJSON
-  >>= flip httpLbs mgr
-  >>= jsonContent "getAllGroups"
+getAllGroups = generalRequest
+  ["https://api.hubapi.com/contacts/v1/groups"]
+  return
+  (jsonContent "getAllGroups")
 
 -- | Create a property group
 --
@@ -86,12 +74,7 @@ createGroup
   -> Auth
   -> Manager
   -> m Group
-createGroup group auth mgr =
-  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/groups"
-                  , groupName group
-                  ]
-  >>= setMethod PUT
-  >>= acceptJSON
-  >>= setJSONBody group
-  >>= flip httpLbs mgr
-  >>= jsonContent "createGroup"
+createGroup group = generalRequest
+  ["https://api.hubapi.com/contacts/v1/groups", groupName group]
+  (setMethod PUT >=> setJSONBody group)
+  (jsonContent "createGroup")

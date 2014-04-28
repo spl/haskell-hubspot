@@ -35,13 +35,14 @@ getAllContacts
 getAllContacts offset count auth mgr = do
   when (count < 0 || count > 100) $ fail $ "getAllContacts: bad count: " ++ show count
   when (offset < 0) $ fail $ "getAllContacts: bad offset: " ++ show offset
-  newAuthReq auth ["https://api.hubapi.com/contacts/v1/lists/all/contacts/all"]
-  >>= addQuery [ ("count"     , Just $ intToBS count  )
-               , ("vidOffset" , Just $ intToBS offset )
-               ]
-  >>= acceptJSON
-  >>= flip httpLbs mgr
-  >>= liftM tuplePage . jsonContent "getAllContacts"
+  generalRequest
+    ["https://api.hubapi.com/contacts/v1/lists/all/contacts/all"]
+    (addQuery [ ("count"     , Just $ intToBS count  )
+              , ("vidOffset" , Just $ intToBS offset )
+              ])
+    (liftM tuplePage . jsonContent "getAllContacts")
+    auth
+    mgr
 
 -- | Get a contact profile by a key
 getContact
@@ -50,15 +51,10 @@ getContact
   -> Auth
   -> Manager
   -> m Contact
-getContact key auth mgr =
-  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
-                  , contactKey key
-                  , contactKeyVal key
-                  , "profile"
-                  ]
-  >>= acceptJSON
-  >>= flip httpLbs mgr
-  >>= jsonContent "getContact"
+getContact key = generalRequest
+  ["https://api.hubapi.com/contacts/v1/contact", contactKey key, contactKeyVal key, "profile"]
+  return
+  (jsonContent "getContact")
 
 -- | Get multiple contact profiles with keys
 --
@@ -69,16 +65,11 @@ getContacts
   -> Auth
   -> Manager
   -> m (HashMap ContactId Contact)
-getContacts []   _    _   = return HM.empty
-getContacts keys auth mgr = let key = contactKey (head keys) in
-  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact"
-                  , key `TS.snoc` 's'
-                  , "batch"
-                  ]
-  >>= addQuery (queryTextToQuery $ map ((key,) . Just . contactKeyVal) keys)
-  >>= acceptJSON
-  >>= flip httpLbs mgr
-  >>= liftM (HM.fromList . map (first read) . HM.toList) . jsonContent "getContacts"
+getContacts []   = \_ _ -> return HM.empty
+getContacts keys = let key = contactKey (head keys) in generalRequest
+  ["https://api.hubapi.com/contacts/v1/contact", key `TS.snoc` 's', "batch"]
+  (addQuery $ queryTextToQuery $ map ((key,) . Just . contactKeyVal) keys)
+  (liftM (HM.fromList . map (first read) . HM.toList) . jsonContent "getContacts")
 
 -- | Update a contact profile by a 'ContactId'
 updateContact
@@ -88,17 +79,10 @@ updateContact
   -> Auth
   -> Manager
   -> m ()
-updateContact contactId propValues auth mgr =
-  newAuthReq auth [ "https://api.hubapi.com/contacts/v1/contact/vid"
-                  , contactKeyVal contactId
-                  , "profile"
-                  ]
-  >>= acceptJSON
-  >>= setJSONBody (PropValueList propValues)
-  >>= flip httpLbs mgr
-  >>= \rsp -> case statusCode $ responseStatus rsp of
-    204 -> return ()
-    _   -> return () -- ERROR!
+updateContact contactId propValues = generalRequest
+  ["https://api.hubapi.com/contacts/v1/contact/vid", contactKeyVal contactId, "profile"]
+  (setJSONBody $ PropValueList propValues)
+  (\_ -> return ())
 
 --------------------------------------------------------------------------------
 
