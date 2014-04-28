@@ -16,10 +16,47 @@ import qualified Data.Text.Encoding as TS
 -- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
 -- construction.
 newtype ClientId = ClientId { fromClientId :: ByteString }
-  deriving (IsString)
+  deriving IsString
 
 instance Show ClientId where
   show = showBS . fromClientId
+
+instance ToJSON ClientId where
+  toJSON = String . TS.decodeUtf8 . fromClientId
+
+instance FromJSON ClientId where
+  parseJSON = fmap (ClientId . TS.encodeUtf8) . parseJSON
+
+--------------------------------------------------------------------------------
+
+-- | Portal ID (sometimes called Hub ID or account number)
+--
+-- Note: Use the 'Num' instance for easy construction.
+newtype PortalId = PortalId { fromPortalId :: Int }
+  deriving Num
+
+instance Read PortalId where
+  readsPrec n = map (first PortalId) . readsPrec n
+
+instance Show PortalId where
+  show = show . fromPortalId
+
+instance ToJSON PortalId where
+  toJSON = toJSON . fromPortalId
+
+instance FromJSON PortalId where
+  parseJSON = fmap PortalId . parseJSON
+
+portalIdQueryVal :: PortalId -> ByteString
+portalIdQueryVal = intToBS . fromPortalId
+
+-- | An unexported, intermediate type used in refreshAuth
+newtype AuthPortalId = AuthPortalId { portal_id :: PortalId }
+
+--------------------------------------------------------------------------------
+
+-- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
+type Scope = ByteString
 
 --------------------------------------------------------------------------------
 
@@ -29,7 +66,7 @@ data Auth = Auth
   , authRefreshToken :: Maybe ByteString -- ^ Refresh token for "offline" scope
   , authExpiresIn    :: UTCTime          -- ^ Expiration time of of the access token
   }
-  deriving (Show)
+  deriving Show
 
 instance ToJSON Auth where
   toJSON (Auth {..}) = object
@@ -67,37 +104,6 @@ mkAuthFromResponse rsp = do
 newAuthReq :: MonadIO m => Auth -> [Text] -> m Request
 newAuthReq Auth {..} pieces = parseUrl (TS.unpack $ TS.intercalate "/" pieces)
   >>= setQuery [("access_token", Just authAccessToken)]
-
---------------------------------------------------------------------------------
-
--- | Portal ID (sometimes called Hub ID or account number)
---
--- Note: Use the 'Num' instance for easy construction.
-newtype PortalId = PortalId { fromPortalId :: Int }
-  deriving (Num)
-
-instance Read PortalId where
-  readsPrec n = map (first PortalId) . readsPrec n
-
-instance Show PortalId where
-  show = show . fromPortalId
-
-instance ToJSON PortalId where
-  toJSON = toJSON . fromPortalId
-
-instance FromJSON PortalId where
-  parseJSON = fmap PortalId . parseJSON
-
-portalIdQueryVal :: PortalId -> ByteString
-portalIdQueryVal = intToBS . fromPortalId
-
--- | An unexported, intermediate type used in refreshAuth
-newtype AuthPortalId = AuthPortalId { portal_id :: PortalId }
-
---------------------------------------------------------------------------------
-
--- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
-type Scope = ByteString
 
 --------------------------------------------------------------------------------
 
@@ -189,7 +195,7 @@ data Property = Property
   , propDisplayOrder  :: !Int
   , propOptions       :: ![PropertyOption]
   }
-  deriving (Show)
+  deriving Show
 
 instance ToJSON Property where
   toJSON Property {..} = object
@@ -240,7 +246,7 @@ data PropertyOption = PropertyOption
   , poValue        :: !Text
   , poDisplayOrder :: !Int
   }
-  deriving (Show)
+  deriving Show
 
 --------------------------------------------------------------------------------
 
