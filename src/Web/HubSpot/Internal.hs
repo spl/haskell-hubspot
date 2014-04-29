@@ -7,6 +7,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable)
 import qualified Data.Text as TS
+import qualified Data.Text.Encoding as TS
 import Data.Typeable (Typeable)
 
 --------------------------------------------------------------------------------
@@ -85,9 +86,26 @@ data Auth = Auth
   , authPortalId     :: !PortalId             -- ^ HubSpot user identifier
   , authAccessToken  :: !AccessToken          -- ^ Access token for OAuth
   , authRefreshToken :: !(Maybe RefreshToken) -- ^ Only for "offline" scope
-  , authExpiresIn    :: !UTCTime              -- ^ Expiration time of of the access token
+  , authExpiration   :: !UTCTime              -- ^ Expiration time of the access token
   }
   deriving Show
+
+instance ToJSON Auth where
+  toJSON Auth {..} = object
+    [ "client_id"     .= TS.decodeUtf8 authClientId
+    , "portal_id"     .= authPortalId
+    , "access_token"  .= TS.decodeUtf8 authAccessToken
+    , "refresh_token" .= fmap TS.decodeUtf8 authRefreshToken
+    , "expiration"    .= authExpiration
+    ]
+
+instance FromJSON Auth where
+  parseJSON = withObject "Auth" $ \o -> do
+    Auth <$> (TS.encodeUtf8 <$> o .: "client_id")
+         <*> o .: "portal_id"
+         <*> (TS.encodeUtf8 <$> o .: "access_token")
+         <*> (fmap TS.encodeUtf8 <$> o .: "refresh_token")
+         <*> o .: "expiration"
 
 --------------------------------------------------------------------------------
 

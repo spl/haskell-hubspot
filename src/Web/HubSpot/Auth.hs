@@ -100,7 +100,7 @@ withRefresh
   -> m (Maybe Auth, b)
 withRefresh run auth@Auth {..} mgr = do
   tm <- liftIO getCurrentTime
-  let expired = authExpiresIn `diffUTCTime` tm < 5 * 60 {- 5 minutes -}
+  let expired = authExpiration `diffUTCTime` tm < 5 * 60 {- 5 minutes -}
   auth' <- if expired then refreshAuth auth mgr else return auth
   result <- run auth' mgr
   return (if expired then Just auth' else Nothing, result)
