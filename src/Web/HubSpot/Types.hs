@@ -1,6 +1,10 @@
 module Web.HubSpot.Types
-  ( Auth(..)
+  ( AccessToken
+  , RefreshToken
+  , ClientId
+  , PortalId
   , Scope
+  , Auth(..)
   , ContactId(..)
   , Property(..)
   , PropertyValue(..)
