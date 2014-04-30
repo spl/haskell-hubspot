@@ -78,3 +78,17 @@ createPropGroup group = generalRequest
   ["https://api.hubapi.com/contacts/v1/groups", groupName group]
   (setMethod PUT >=> setJSONBody group)
   (jsonContent "createPropGroup")
+
+-- | Update a property group
+--
+-- https://developers.hubspot.com/docs/methods/contacts/update_group
+updatePropGroup
+  :: MonadIO m
+  => PropGroup
+  -> Auth
+  -> Manager
+  -> m PropGroup
+updatePropGroup group = generalRequest
+  ["https://api.hubapi.com/contacts/v1/groups", groupName group]
+  (setMethod POST >=> setJSONBody group)
+  (jsonContent "updatePropGroup")
