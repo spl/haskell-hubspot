@@ -41,22 +41,32 @@ checkResponse rsp = do
   case statusCode status of
     200 -> return rsp
     204 -> return rsp
-    401 -> liftIO $ throwIO $ UnauthorizedRequest body
-    _   -> liftIO $ throwIO $ UnexpectedHttpResponse status body
+    401 -> throwIO $ UnauthorizedRequest body
+    409 -> jsonContent "ConflictingEdit" rsp >>= throwIO . ConflictingEdit
+    _   -> throwIO $ UnexpectedHttpResponse status body
 
 --------------------------------------------------------------------------------
 
 -- | Exceptions thrown by functions in this package.
 data HubSpotException
+
     -- | A refresh was attempted, but no refresh token was provided.
   = NoRefreshToken
+
     -- | HTTP Access Code 401 (Unauthorized) which indicates when an Access
     -- Token has expired. The response body is included.
     --
     -- See https://developers.hubspot.com/auth/oauth_apps
   | UnauthorizedRequest !BL.ByteString
+
+    -- | HTTP Access Code 409 (Conflict) whih indicates that an edit request
+    -- conflicts with current data on the server. This can happen with trying to
+    -- create a new entity but an entity with the same name already exists.
+  | ConflictingEdit !ErrorMessage
+
     -- | An unexpected HTTP response status with the response body
   | UnexpectedHttpResponse !Status !BL.ByteString
+
   deriving (Show, Typeable)
 
 instance Exception HubSpotException

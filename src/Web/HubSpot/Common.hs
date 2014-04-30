@@ -28,7 +28,8 @@ module Web.HubSpot.Common
 import Prelude hiding (mapM, sequence)
 import Control.Applicative
 import Control.Arrow
-import Control.Exception
+import Control.Exception hiding (throwIO)
+import qualified Control.Exception
 import Control.Monad hiding (forM, mapM, sequence)
 import Control.Monad.IO.Class
 import Data.Aeson
@@ -80,6 +81,11 @@ readMay :: Read a => String -> Maybe a
 readMay s = case [x | (x, t) <- reads s, ("", "") <- lex t] of
   [x] -> Just x
   _   -> Nothing
+
+--------------------------------------------------------------------------------
+
+throwIO :: (MonadIO m, Exception e) => e -> m a
+throwIO = liftIO . Control.Exception.throwIO
 
 --------------------------------------------------------------------------------
 
