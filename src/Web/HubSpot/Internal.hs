@@ -19,12 +19,13 @@ import Data.Typeable (Typeable)
 generalRequest
   :: MonadIO m
   => [Text]
-  -> (Request -> m Request)
-  -> (Response BL.ByteString -> m a)
+  -> (Request -> IO Request)
+  -> (Response BL.ByteString -> IO a)
   -> Auth
   -> Manager
   -> m a
 generalRequest urlSegments modifyRequest processResponse Auth {..} mgr =
+  liftIO $ handle handleHttpException $
   parseUrl (TS.unpack $ TS.intercalate "/" urlSegments)
   >>= acceptJSON
   >>= setQuery [("access_token", Just authAccessToken)]
@@ -33,7 +34,10 @@ generalRequest urlSegments modifyRequest processResponse Auth {..} mgr =
   >>= checkResponse
   >>= processResponse
 
--- | Check the response HTTP status codes. Throw an exception if needed.
+-- | Check the response HTTP status codes for successful requests.
+--
+-- Note: This does not check unsuccessful requests, because 'httpLbs' throws an
+-- 'HttpException' for those.
 checkResponse :: MonadIO m => Response BL.ByteString -> m (Response BL.ByteString)
 checkResponse rsp = do
   let status = responseStatus rsp
@@ -41,10 +45,20 @@ checkResponse rsp = do
   case statusCode status of
     200 -> return rsp
     204 -> return rsp
-    401 -> throwIO $ UnauthorizedRequest body
-    404 -> jsonContent "DataNotFound" rsp >>= throwIO . DataNotFound
-    409 -> jsonContent "ConflictingEdit" rsp >>= throwIO . ConflictingEdit
     _   -> throwIO $ UnexpectedHttpResponse status body
+
+handleHttpException :: HttpException -> IO a
+handleHttpException e@(StatusCodeException status rspHdrs _) =
+  case statusCode status of
+    401 -> throwIO $ UnauthorizedRequest mErrMsg
+    404 -> throwIO $ DataNotFound mErrMsg
+    409 -> throwIO $ ConflictingEdit mErrMsg
+    _   -> throwIO e
+  where
+    mErrMsg = do
+      body <- lookup "X-Response-Body-Start" rspHdrs
+      decodeStrict' body
+handleHttpException e = throwIO e
 
 --------------------------------------------------------------------------------
 
@@ -58,16 +72,16 @@ data HubSpotException
     -- Token has expired. The response body is included.
     --
     -- See https://developers.hubspot.com/auth/oauth_apps
-  | UnauthorizedRequest !BL.ByteString
+  | UnauthorizedRequest !(Maybe ErrorMessage)
 
     -- | HTTP Access Code 404 (Not Found) which indicates that the requested
     -- data is not available.
-  | DataNotFound !ErrorMessage
+  | DataNotFound !(Maybe ErrorMessage)
 
     -- | HTTP Access Code 409 (Conflict) which indicates that an edit request
     -- conflicts with current data on the server. This can happen with trying to
     -- create a new entity but an entity with the same name already exists.
-  | ConflictingEdit !ErrorMessage
+  | ConflictingEdit !(Maybe ErrorMessage)
 
     -- | An unexpected HTTP response status with the response body
   | UnexpectedHttpResponse !Status !BL.ByteString
