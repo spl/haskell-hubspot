@@ -10,7 +10,6 @@ module Web.HubSpot.Contacts
 
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
@@ -64,12 +63,12 @@ getContacts
   => [key]   -- ^ List of 'ContactId's, 'UserToken's, or 'Text' email addresses
   -> Auth
   -> Manager
-  -> m (HashMap ContactId Contact)
-getContacts []   = \_ _ -> return HM.empty
+  -> m [(ContactId, Contact)]
+getContacts []   = \_ _ -> return []
 getContacts keys = let key = keyName (head keys) in generalRequest
   ["https://api.hubapi.com/contacts/v1/contact", key `TS.snoc` 's', "batch"]
   (addQuery $ queryTextToQuery $ map ((key,) . Just . keyVal) keys)
-  (liftM (HM.fromList . map (first read) . HM.toList) . jsonContent "getContacts")
+  (liftM (map (first read) . HM.toList) . jsonContent "getContacts")
 
 -- | Update a contact profile by a 'ContactId'
 updateContact
