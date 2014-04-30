@@ -15,7 +15,7 @@ getProperty
   => Text  -- ^ Property name
   -> Auth
   -> Manager
-  -> m [Property]
+  -> m Property
 getProperty name = generalRequest
   ["https://api.hubapi.com/contacts/v1/properties", name]
   return
