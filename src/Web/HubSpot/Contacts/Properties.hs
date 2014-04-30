@@ -7,6 +7,20 @@ import Web.HubSpot.Internal
 
 --------------------------------------------------------------------------------
 
+-- | Get a contact property (fields)
+--
+-- https://developers.hubspot.com/docs/methods/contacts/get_properties
+getProperty
+  :: MonadIO m
+  => Text  -- ^ Property name
+  -> Auth
+  -> Manager
+  -> m [Property]
+getProperty name = generalRequest
+  ["https://api.hubapi.com/contacts/v1/properties", name]
+  return
+  (jsonContent "getProperty")
+
 -- | Get all contact properties (fields)
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_properties
