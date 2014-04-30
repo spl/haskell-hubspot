@@ -42,7 +42,7 @@ getGroups
   => Text  -- ^ Group name
   -> Auth
   -> Manager
-  -> m Group
+  -> m PropGroup
 getGroups name = generalRequest
   ["https://api.hubapi.com/contacts/v1/groups", name]
   return
@@ -55,7 +55,7 @@ getAllGroups
   :: MonadIO m
   => Auth
   -> Manager
-  -> m [Group]
+  -> m [PropGroup]
 getAllGroups = generalRequest
   ["https://api.hubapi.com/contacts/v1/groups"]
   return
@@ -70,10 +70,10 @@ getAllGroups = generalRequest
 -- https://developers.hubspot.com/docs/methods/contacts/create_group
 createGroup
   :: MonadIO m
-  => Group
+  => PropGroup
   -> Auth
   -> Manager
-  -> m Group
+  -> m PropGroup
 createGroup group = generalRequest
   ["https://api.hubapi.com/contacts/v1/groups", groupName group]
   (setMethod PUT >=> setJSONBody group)

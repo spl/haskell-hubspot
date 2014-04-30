@@ -7,11 +7,11 @@ module Web.HubSpot.Types
   , Auth(..)
   , ContactId(..)
   , Property(..)
-  , PropertyValue(..)
-  , PropertyType(..)
-  , PropertyFieldType(..)
-  , PropertyOption(..)
-  , Group(..)
+  , PropValue(..)
+  , PropType(..)
+  , PropFieldType(..)
+  , PropOption(..)
+  , PropGroup(..)
   ) where
 
 --------------------------------------------------------------------------------

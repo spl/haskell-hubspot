@@ -191,11 +191,11 @@ data Property = Property
   , propLabel         :: !Text
   , propDescription   :: !Text
   , propGroupName     :: !Text
-  , propType          :: !(Either Text PropertyType)
-  , propFieldType     :: !(Either Text PropertyFieldType)
+  , propType          :: !(Either Text PropType)
+  , propFieldType     :: !(Either Text PropFieldType)
   , propFormField     :: !Bool
   , propDisplayOrder  :: !Int
-  , propOptions       :: ![PropertyOption]
+  , propOptions       :: ![PropOption]
   }
   deriving Show
 
@@ -224,7 +224,7 @@ instance FromJSON Property where
              <*> o .:  "displayOrder"
              <*> o .:  "options"
 
-data PropertyType
+data PropType
   = PTString
   | PTNumber
   | PTBool
@@ -232,7 +232,7 @@ data PropertyType
   | PTEnumeration
   deriving (Eq, Enum, Bounded, Read, Show)
 
-data PropertyFieldType
+data PropFieldType
   = PFTTextArea
   | PFTSelect
   | PFTText
@@ -243,7 +243,7 @@ data PropertyFieldType
   | PFTCheckBox
   deriving (Eq, Enum, Bounded, Read, Show)
 
-data PropertyOption = PropertyOption
+data PropOption = PropOption
   { poLabel        :: !Text
   , poValue        :: !Text
   , poDisplayOrder :: !Int
@@ -253,25 +253,25 @@ data PropertyOption = PropertyOption
 --------------------------------------------------------------------------------
 
 -- | This is used to set the value of a property on a contact.
-data PropertyValue = PropertyValue
+data PropValue = PropValue
   { pvName  :: !Text
   , pvValue :: !Text
   }
 
-instance ToJSON PropertyValue where
-  toJSON PropertyValue {..} = object
+instance ToJSON PropValue where
+  toJSON PropValue {..} = object
     [ "property" .= pvName
     , "value"    .= pvValue
     ]
 
-instance FromJSON PropertyValue where
-  parseJSON = withObject "PropertyValue" $ \o -> do
-    PropertyValue <$> o .: "property"
-                  <*> o .: "value"
+instance FromJSON PropValue where
+  parseJSON = withObject "PropValue" $ \o -> do
+    PropValue <$> o .: "property"
+              <*> o .: "value"
 
 -- | An unexported, intermediate type used for retrieving a list of
--- 'PropertyValue's.
-data PropValueList = PropValueList { pvlProperties  :: ![PropertyValue] }
+-- 'PropValue's.
+data PropValueList = PropValueList { pvlProperties  :: ![PropValue] }
 
 --------------------------------------------------------------------------------
 
@@ -279,10 +279,10 @@ data PropValueList = PropValueList { pvlProperties  :: ![PropertyValue] }
 --
 -- In some cases, the group object returned from HubSpot does not have a
 -- @properties@ field. Instead of using a separate type for those cases, we
--- simply return a 'Group' value with an empty 'groupProperties' list.
+-- simply return a 'PropGroup' value with an empty 'groupProperties' list.
 --
 -- https://developers.hubspot.com/docs/methods/contacts/create_group
-data Group = Group
+data PropGroup = PropGroup
   { groupName         :: !Text
   , groupDisplayName  :: !Text
   , groupDisplayOrder :: !Int
@@ -291,8 +291,8 @@ data Group = Group
   }
   deriving Show
 
-instance ToJSON Group where
-  toJSON Group {..} = object $
+instance ToJSON PropGroup where
+  toJSON PropGroup {..} = object $
     [ "name"         .= groupName
     , "displayName"  .= groupDisplayName
     , "displayOrder" .= groupDisplayOrder
@@ -300,21 +300,21 @@ instance ToJSON Group where
     ] ++
     (pairIf (not . null) "properties" groupProperties) -- Only included if not empty
 
-instance FromJSON Group where
-  parseJSON = withObject "Group" $ \o -> do
-    Group <$> o .:  "name"
-          <*> o .:  "displayName"
-          <*> o .:  "displayOrder"
-          <*> o .:  "portalId"
-          <*> o .:* "properties"  -- Empty if not found
+instance FromJSON PropGroup where
+  parseJSON = withObject "PropGroup" $ \o -> do
+    PropGroup <$> o .:  "name"
+              <*> o .:  "displayName"
+              <*> o .:  "displayOrder"
+              <*> o .:  "portalId"
+              <*> o .:* "properties"  -- Empty if not found
 
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
 
-deriveJSON_ ''PropertyType      (defaultEnumOptions   2)
-deriveJSON_ ''PropertyFieldType (defaultEnumOptions   3)
+deriveJSON_ ''PropType          (defaultEnumOptions   2)
+deriveJSON_ ''PropFieldType     (defaultEnumOptions   3)
 
-deriveJSON_ ''PropertyOption    (defaultRecordOptions 2)
+deriveJSON_ ''PropOption        (defaultRecordOptions 2)
 deriveJSON_ ''PropValueList     (defaultRecordOptions 3)
 
 deriveJSON_ ''ContactsPage

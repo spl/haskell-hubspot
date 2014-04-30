@@ -75,7 +75,7 @@ getContacts keys = let key = keyName (head keys) in generalRequest
 updateContact
   :: MonadIO m
   => ContactId
-  -> [PropertyValue]
+  -> [PropValue]
   -> Auth
   -> Manager
   -> m ()
