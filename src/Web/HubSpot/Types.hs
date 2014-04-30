@@ -12,6 +12,7 @@ module Web.HubSpot.Types
   , PropFieldType(..)
   , PropOption(..)
   , PropGroup(..)
+  , HubSpotException(..)
   ) where
 
 --------------------------------------------------------------------------------
