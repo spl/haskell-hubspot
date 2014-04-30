@@ -34,19 +34,19 @@ createProperty prop = generalRequest
   (setMethod PUT >=> setJSONBody prop)
   (jsonContent "createProperty")
 
--- | Get property groups for a given group
+-- | Get a property group with all the properties in that group
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_groups
-getPropGroups
+getPropGroup
   :: MonadIO m
   => Text  -- ^ Group name
   -> Auth
   -> Manager
   -> m PropGroup
-getPropGroups name = generalRequest
+getPropGroup name = generalRequest
   ["https://api.hubapi.com/contacts/v1/groups", name]
   return
-  (jsonContent "getPropGroups")
+  (jsonContent "getPropGroup")
 
 -- | Get all property groups
 --
