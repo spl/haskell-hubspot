@@ -42,6 +42,7 @@ checkResponse rsp = do
     200 -> return rsp
     204 -> return rsp
     401 -> throwIO $ UnauthorizedRequest body
+    404 -> jsonContent "DataNotFound" rsp >>= throwIO . DataNotFound
     409 -> jsonContent "ConflictingEdit" rsp >>= throwIO . ConflictingEdit
     _   -> throwIO $ UnexpectedHttpResponse status body
 
@@ -59,7 +60,11 @@ data HubSpotException
     -- See https://developers.hubspot.com/auth/oauth_apps
   | UnauthorizedRequest !BL.ByteString
 
-    -- | HTTP Access Code 409 (Conflict) whih indicates that an edit request
+    -- | HTTP Access Code 404 (Not Found) which indicates that the requested
+    -- data is not available.
+  | DataNotFound !ErrorMessage
+
+    -- | HTTP Access Code 409 (Conflict) which indicates that an edit request
     -- conflicts with current data on the server. This can happen with trying to
     -- create a new entity but an entity with the same name already exists.
   | ConflictingEdit !ErrorMessage
