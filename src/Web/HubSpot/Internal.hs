@@ -72,19 +72,19 @@ data HubSpotException
     -- Token has expired. The response body is included.
     --
     -- See https://developers.hubspot.com/auth/oauth_apps
-  | UnauthorizedRequest !(Maybe ErrorMessage)
+  | UnauthorizedRequest (Maybe ErrorMessage)
 
     -- | HTTP Access Code 404 (Not Found) which indicates that the requested
     -- data is not available.
-  | DataNotFound !(Maybe ErrorMessage)
+  | DataNotFound (Maybe ErrorMessage)
 
     -- | HTTP Access Code 409 (Conflict) which indicates that an edit request
     -- conflicts with current data on the server. This can happen with trying to
     -- create a new entity but an entity with the same name already exists.
-  | ConflictingEdit !(Maybe ErrorMessage)
+  | ConflictingEdit (Maybe ErrorMessage)
 
     -- | An unexpected HTTP response status with the response body
-  | UnexpectedHttpResponse !Status !BL.ByteString
+  | UnexpectedHttpResponse Status BL.ByteString
 
   deriving (Show, Typeable)
 
