@@ -34,6 +34,20 @@ createProperty prop = generalRequest
   (setMethod PUT >=> setJSONBody prop)
   (jsonContent "createProperty")
 
+-- | Update a new contact property (field)
+--
+-- https://developers.hubspot.com/docs/methods/contacts/update_property
+updateProperty
+  :: MonadIO m
+  => Property
+  -> Auth
+  -> Manager
+  -> m Property
+updateProperty prop = generalRequest
+  ["https://api.hubapi.com/contacts/v1/properties", propName prop]
+  (setMethod POST >=> setJSONBody prop)
+  (jsonContent "updateProperty")
+
 -- | Get a property group with all the properties in that group
 --
 -- https://developers.hubspot.com/docs/methods/contacts/get_groups
