@@ -7,9 +7,12 @@ module Web.HubSpot.Types
   , Timestamp
   , Auth(..)
   , ContactId(..)
+  , Contact(..)
   , Property(..)
   , PropValue(..)
   , PropVersion(..)
+  , PropMap
+  , SetProp(..)
   , PropType(..)
   , PropFieldType(..)
   , PropOption(..)

@@ -225,10 +225,25 @@ instance Show UserToken where
 
 --------------------------------------------------------------------------------
 
--- | A contact profile from HubSpot
+-- | A contact profile
 --
--- Note: This is a simple type synonym. We should use a real data type.
-type Contact = HashMap Text Value
+-- Note: We currently only decode part of the contact profile. For the rest of
+-- the fields, see 'contactObject'.
+data Contact = Contact
+  { contactId         :: !ContactId
+  , contactProperties :: !PropMap
+  , contactObject     :: !Object  -- ^ The entire object
+  }
+  deriving Show
+
+instance ToJSON Contact where
+  toJSON Contact {..} = Object contactObject
+
+instance FromJSON Contact where
+  parseJSON = withObject "Contact" $ \o -> do
+    Contact <$> o .:  "vid"
+            <*> o .:  "properties"
+            <*> return o
 
 -- | An unexported, intermediate type used in getContacts
 data ContactsPage = ContactsPage
@@ -315,29 +330,13 @@ data PropOption = PropOption
 
 --------------------------------------------------------------------------------
 
--- | This is used to set the value of a property on a contact.
+-- | Used by the 'Contact' object for the current and previous values of a
+-- 'Property'.
 data PropValue = PropValue
-  { pvName     :: !Text
-  , pvValue    :: !Text
-  , pvVersions :: ![PropVersion]
+  { pvalValue    :: !Text
+  , pvalVersions :: ![PropVersion]
   }
-
-instance ToJSON PropValue where
-  toJSON PropValue {..} = object $
-    [ "property" .= pvName
-    , "value"    .= pvValue
-    ] ++
-    (pairIf (not . null) "versions" pvVersions) -- Only included if not empty
-
-instance FromJSON PropValue where
-  parseJSON = withObject "PropValue" $ \o -> do
-    PropValue <$> o .:  "property"
-              <*> o .:  "value"
-              <*> o .:* "versions"  -- Empty if not found
-
--- | An unexported, intermediate type used for retrieving a list of
--- 'PropValue's.
-data PropValueList = PropValueList { pvlProperties  :: ![PropValue] }
+  deriving Show
 
 -- | A property value with version metadata
 data PropVersion = PropVersion
@@ -348,6 +347,22 @@ data PropVersion = PropVersion
   , pverTimestamp   :: !Timestamp
   , pverSelected    :: !Bool
   }
+  deriving Show
+
+-- | A map from property names to values
+type PropMap = HashMap Text PropValue
+
+--------------------------------------------------------------------------------
+
+-- | A pair for assigning to a property a value.
+data SetProp = SetProp
+  { spProperty :: !Text
+  , spValue    :: !Text
+  }
+  deriving Show
+
+-- | An intermediate type used only for its 'ToJSON' instance.
+data SetPropList = SetPropList { splProperties :: ![SetProp] }
 
 --------------------------------------------------------------------------------
 
@@ -387,13 +402,16 @@ instance FromJSON PropGroup where
 --------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
 
-deriveJSON_ ''PropType          (defaultEnumOptions   2)
-deriveJSON_ ''PropFieldType     (defaultEnumOptions   3)
+deriveJSON_     ''PropType       (defaultEnumOptions   2)
+deriveJSON_     ''PropFieldType  (defaultEnumOptions   3)
 
-deriveJSON_ ''PropOption        (defaultRecordOptions 2)
-deriveJSON_ ''PropValueList     (defaultRecordOptions 3)
+deriveJSON_     ''PropOption     (defaultRecordOptions 2)
 
-deriveJSON_ ''PropVersion       (dashedRecordOptions  4)
+deriveJSON_     ''PropValue      (defaultRecordOptions 4)
+deriveJSON_     ''PropVersion    (dashedRecordOptions  4)
 
-deriveJSON_ ''ContactsPage
+deriveJSON_     ''SetProp        (defaultRecordOptions 2)
+deriveToJSON_   ''SetPropList    (defaultRecordOptions 3)
+
+deriveJSON_     ''ContactsPage
   defaultOptions { fieldLabelModifier = map (\c -> if c == '_' then '-' else c) }

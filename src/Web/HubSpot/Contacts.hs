@@ -72,13 +72,13 @@ getContacts keys = let key = keyName (head keys) in generalRequest
 updateContact
   :: MonadIO m
   => ContactId
-  -> [PropValue]
+  -> [SetProp]
   -> Auth
   -> Manager
   -> m ()
 updateContact contactId propValues = generalRequest
   ["https://api.hubapi.com/contacts/v1/contact/vid", keyVal contactId, "profile"]
-  (setJSONBody $ PropValueList propValues)
+  (setJSONBody $ SetPropList propValues)
   (\_ -> return ())
 
 --------------------------------------------------------------------------------

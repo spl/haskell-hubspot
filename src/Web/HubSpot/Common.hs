@@ -35,7 +35,7 @@ import qualified Control.Exception
 import Control.Monad hiding (forM, mapM, sequence)
 import Control.Monad.IO.Class
 import Data.Aeson
-import Data.Aeson.TH (deriveJSON)
+import Data.Aeson.TH
 import Data.Aeson.Types
 import Data.Char
 import Data.ByteString (ByteString)
@@ -206,6 +206,12 @@ jsonContent msg rsp = do
 
 deriveJSON_ :: Name -> Options -> Q [Dec]
 deriveJSON_ = flip deriveJSON
+
+deriveToJSON_ :: Name -> Options -> Q [Dec]
+deriveToJSON_ = flip deriveToJSON
+
+deriveFromJSON_ :: Name -> Options -> Q [Dec]
+deriveFromJSON_ = flip deriveFromJSON
 
 defaultEnumOptions :: Int -> Options
 defaultEnumOptions n = defaultOptions
