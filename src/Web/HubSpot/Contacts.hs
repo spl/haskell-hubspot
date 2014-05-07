@@ -39,7 +39,7 @@ getAllContacts offset count auth mgr = do
     (addQuery [ ("count"     , Just $ intToBS count  )
               , ("vidOffset" , Just $ intToBS offset )
               ])
-    (liftM tuplePage . jsonContent "getAllContacts")
+    (liftM fromContactPage . jsonContent "getAllContacts")
     auth
     mgr
 

@@ -245,15 +245,16 @@ instance FromJSON Contact where
             <*> o .:  "properties"
             <*> return o
 
--- | An unexported, intermediate type used in getContacts
-data ContactsPage = ContactsPage
+-- | An intermediate type used only for its 'FromJSON' instance.
+data ContactPage = ContactPage
   { contacts   :: ![Contact]
-  , has_more   :: !Bool
-  , vid_offset :: !Int
+  , hasMore    :: !Bool
+  , vidOffset  :: !Int
   }
+  deriving Show
 
-tuplePage :: ContactsPage -> ([Contact], Bool, Int)
-tuplePage (ContactsPage a b c) = (a, b, c)
+fromContactPage :: ContactPage -> ([Contact], Bool, Int)
+fromContactPage (ContactPage a b c) = (a, b, c)
 
 --------------------------------------------------------------------------------
 
@@ -413,5 +414,4 @@ deriveJSON_     ''PropVersion    (dashedRecordOptions  4)
 deriveJSON_     ''SetProp        (defaultRecordOptions 2)
 deriveToJSON_   ''SetPropList    (defaultRecordOptions 3)
 
-deriveJSON_     ''ContactsPage
-  defaultOptions { fieldLabelModifier = map (\c -> if c == '_' then '-' else c) }
+deriveFromJSON_ ''ContactPage    (dashedRecordOptions  0)
