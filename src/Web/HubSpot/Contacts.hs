@@ -55,12 +55,10 @@ getContact key = generalRequest
   return
   (jsonContent "getContact")
 
--- | Get multiple contact profiles with keys
---
--- A key is either a 'ContactId', a 'UserToken', or a 'Text' email address.
+-- | Get multiple contact profiles by keys
 getContacts
   :: (MonadIO m, ContactKey key)
-  => [key]   -- ^ List of 'ContactId's, 'UserToken's, or 'Text' email addresses
+  => [key]   -- ^ A list of 'ContactId's, 'UserToken's, or 'Text' email addresses
   -> Auth
   -> Manager
   -> m [(ContactId, Contact)]
