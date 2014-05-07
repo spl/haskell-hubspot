@@ -1,8 +1,8 @@
 module Web.HubSpot.Types
   ( AccessToken
   , RefreshToken
-  , ClientId
-  , PortalId
+  , ClientId(..)
+  , PortalId(..)
   , Scope
   , Timestamp
   , Auth(..)
