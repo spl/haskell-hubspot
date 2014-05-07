@@ -331,13 +331,23 @@ data PropOption = PropOption
 
 --------------------------------------------------------------------------------
 
--- | Used by the 'Contact' object for the current and previous values of a
--- 'Property'.
+-- | Current and previous values of a 'Property'.
 data PropValue = PropValue
   { pvalValue    :: !Text
   , pvalVersions :: ![PropVersion]
   }
   deriving Show
+
+instance ToJSON PropValue where
+  toJSON PropValue {..} = object $
+    [ "value" .= pvalValue
+    ] ++
+    (pairIf (not . null) "versions" pvalVersions) -- Only included if not empty
+
+instance FromJSON PropValue where
+  parseJSON = withObject "PropValue" $ \o -> do
+    PropValue <$> o .:  "value"
+              <*> o .:* "versions"  -- Empty if not found
 
 -- | A property value with version metadata
 data PropVersion = PropVersion
@@ -408,7 +418,6 @@ deriveJSON_     ''PropFieldType  (defaultEnumOptions   3)
 
 deriveJSON_     ''PropOption     (defaultRecordOptions 2)
 
-deriveJSON_     ''PropValue      (defaultRecordOptions 4)
 deriveJSON_     ''PropVersion    (dashedRecordOptions  4)
 
 deriveJSON_     ''SetProp        (defaultRecordOptions 2)
