@@ -92,17 +92,49 @@ instance Exception HubSpotException
 
 --------------------------------------------------------------------------------
 
+-- | Client ID
+--
+-- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
+-- construction.
+newtype ClientId = ClientId { fromClientId :: ByteString }
+  deriving IsString
+
+instance Show ClientId where
+  show = showBS . fromClientId
+
+instance ToJSON ClientId where
+  toJSON = String . TS.decodeUtf8 . fromClientId
+
+instance FromJSON ClientId where
+  parseJSON = fmap (ClientId . TS.encodeUtf8) . parseJSON
+
+--------------------------------------------------------------------------------
+
+-- | Portal ID (also called Hub ID or account number)
+--
+-- Note: Use the 'Num' instance for easy construction.
+newtype PortalId = PortalId { fromPortalId :: Int }
+  deriving Num
+
+instance Read PortalId where
+  readsPrec n = map (first PortalId) . readsPrec n
+
+instance Show PortalId where
+  show = show . fromPortalId
+
+instance ToJSON PortalId where
+  toJSON = toJSON . fromPortalId
+
+instance FromJSON PortalId where
+  parseJSON = fmap PortalId . parseJSON
+
+--------------------------------------------------------------------------------
+
 -- | Access token
 type AccessToken = ByteString
 
 -- | Refresh token
 type RefreshToken = ByteString
-
--- | Client ID
-type ClientId = ByteString
-
--- | Portal ID (sometimes called Hub ID or account number)
-type PortalId = Int
 
 -- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
 type Scope = ByteString
@@ -111,9 +143,7 @@ type Scope = ByteString
 
 -- | Authentication information
 data Auth = Auth
-  { authClientId     :: !ClientId             -- ^ HubSpot app identifier
-  , authPortalId     :: !PortalId             -- ^ HubSpot user identifier
-  , authAccessToken  :: !AccessToken          -- ^ Access token for OAuth
+  { authAccessToken  :: !AccessToken          -- ^ Access token for OAuth
   , authRefreshToken :: !(Maybe RefreshToken) -- ^ Only for "offline" scope
   , authExpiration   :: !UTCTime              -- ^ Expiration time of the access token
   }
@@ -121,18 +151,14 @@ data Auth = Auth
 
 instance ToJSON Auth where
   toJSON Auth {..} = object
-    [ "client_id"     .= TS.decodeUtf8 authClientId
-    , "portal_id"     .= authPortalId
-    , "access_token"  .= TS.decodeUtf8 authAccessToken
+    [ "access_token"  .= TS.decodeUtf8 authAccessToken
     , "refresh_token" .= fmap TS.decodeUtf8 authRefreshToken
     , "expiration"    .= authExpiration
     ]
 
 instance FromJSON Auth where
   parseJSON = withObject "Auth" $ \o -> do
-    Auth <$> (TS.encodeUtf8 <$> o .: "client_id")
-         <*> o .: "portal_id"
-         <*> (TS.encodeUtf8 <$> o .: "access_token")
+    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
          <*> (fmap TS.encodeUtf8 <$> o .: "refresh_token")
          <*> o .: "expiration"
 

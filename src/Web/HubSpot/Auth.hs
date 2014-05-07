@@ -27,20 +27,15 @@ makeAuthUrl
   -> ByteString
 makeAuthUrl clientId portalId redirectUrl scopes = mconcat
   [ "https://app.hubspot.com/auth/authenticate"
-  , renderQuery True $ ("redirect_uri", Just redirectUrl') : clientPortalQuery
-    -- Scopes are not rendered as above because that would
-    -- percent-encode the "+".
+  , renderQuery True
+      [ ("redirect_uri" , Just redirectUrl                       )
+      , ( "client_id"   , Just $ fromClientId clientId           )
+      , ( "portalId"    , Just $ intToBS $ fromPortalId portalId )
+      ]
   , "&scope="
+    -- Do not use renderQuery for scopes to avoid percent-encoding the "+".
   , BS.intercalate "+" $ map (urlEncode True) scopes
   ]
-  where
-    clientPortalQuery =
-      [ ( "client_id" , Just clientId             )
-      , ( "portalId"  , Just $ intToBS $ portalId )
-      ]
-    -- Include the client and portal IDs in the redirect URL for 'parseAuth'.
-    redirectUrl' = case BS.breakByte 63 {- '?' -} redirectUrl of
-      (url, query) -> url <> renderQuery True (clientPortalQuery ++ parseQuery query)
 
 -- | Parse the query provided by HubSpot via the redirect URL given to
 -- 'makeAuthUrl'. If authentication was successful, the 'Right' result contains
@@ -51,9 +46,7 @@ parseAuth q = do
   let err = "parseAuth: failed to parse query: " <> renderQuery False q
   tm <- liftIO getCurrentTime
   return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
-    Auth <$> lookupQ "client_id" q
-         <*> join (intFromBS <$> lookupQ "portalId" q)
-         <*> lookupQ "access_token" q
+    Auth <$> lookupQ "access_token" q
          <*> pure (lookupQ "refresh_token" q)
          <*> (expireTime tm <$> join (intFromBS <$> lookupQ "expires_in" q))
 
@@ -63,10 +56,11 @@ parseAuth q = do
 -- will throw a 'NoRefreshToken' exception.
 refreshAuth
   :: MonadIO m
-  => Auth
+  => ClientId
+  -> Auth
   -> Manager
   -> m Auth
-refreshAuth auth@Auth {..} mgr =
+refreshAuth clientId Auth {..} mgr =
   case authRefreshToken of
     Nothing ->
       -- We throw an exception in this case because it is simple. A more
@@ -79,14 +73,14 @@ refreshAuth auth@Auth {..} mgr =
     Just refreshToken -> do
       parseUrl "https://api.hubapi.com/auth/v1/refresh"
       >>= acceptJSON
-      >>= setUrlEncodedBody [ ( "refresh_token" , refreshToken    )
-                            , ( "client_id"     , authClientId    )
-                            , ( "grant_type"    , "refresh_token" )
+      >>= setUrlEncodedBody [ ( "refresh_token" , refreshToken          )
+                            , ( "client_id"     , fromClientId clientId )
+                            , ( "grant_type"    , "refresh_token"       )
                             ]
       >>= flip httpLbs mgr
       >>= checkResponse
       >>= jsonContent "refreshAuth"
-      >>= parseRefreshAuth auth
+      >>= parseRefreshAuth
 
 -- | Given a function that requires authentication, first check if the access
 -- token has expired and, if needed, refresh the token. Then, run the function
@@ -95,13 +89,14 @@ refreshAuth auth@Auth {..} mgr =
 withRefresh
   :: MonadIO m
   => (Auth -> Manager -> m b)
+  -> ClientId
   -> Auth
   -> Manager
   -> m (Maybe Auth, b)
-withRefresh run auth@Auth {..} mgr = do
+withRefresh run clientId auth@Auth {..} mgr = do
   tm <- liftIO getCurrentTime
   let expired = authExpiration `diffUTCTime` tm < 5 * 60 {- 5 minutes -}
-  auth' <- if expired then refreshAuth auth mgr else return auth
+  auth' <- if expired then refreshAuth clientId auth mgr else return auth
   result <- run auth' mgr
   return (if expired then Just auth' else Nothing, result)
 
@@ -110,12 +105,10 @@ withRefresh run auth@Auth {..} mgr = do
 expireTime :: UTCTime -> Int -> UTCTime
 expireTime tm sec = fromIntegral sec `addUTCTime` tm
 
-parseRefreshAuth :: MonadIO m => Auth -> Object -> m Auth
-parseRefreshAuth Auth {..} obj = do
+parseRefreshAuth :: MonadIO m => Object -> m Auth
+parseRefreshAuth obj = do
   tm <- liftIO getCurrentTime
   either (fail . mappend "pAuth") return $ flip parseEither obj $ \o ->
-    Auth <$> pure authClientId
-         <*> o .: "portal_id"
-         <*> (TS.encodeUtf8 <$> o .: "access_token")
+    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
          <*> (pure . TS.encodeUtf8 <$> o .: "refresh_token")
          <*> (expireTime tm <$> o .: "expires_in")
