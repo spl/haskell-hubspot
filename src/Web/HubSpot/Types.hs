@@ -9,6 +9,7 @@ module Web.HubSpot.Types
   , ContactId(..)
   , Property(..)
   , PropValue(..)
+  , PropVersion(..)
   , PropType(..)
   , PropFieldType(..)
   , PropOption(..)
