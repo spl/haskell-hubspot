@@ -4,6 +4,7 @@ module Web.HubSpot.Types
   , ClientId
   , PortalId
   , Scope
+  , Timestamp
   , Auth(..)
   , ContactId(..)
   , Property(..)

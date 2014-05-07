@@ -159,6 +159,40 @@ instance FromJSON ErrorMessage where
 
 --------------------------------------------------------------------------------
 
+-- | The standard HubSpot timestamp is the number of milliseconds since the Unix
+-- epoch.
+newtype Timestamp = TS { fromTS :: POSIXTime }
+  deriving (Eq, Ord, Fractional, Real, RealFrac)
+
+-- | Convert to/from an integer representing milliseconds
+fromMilliseconds :: Integer -> Timestamp
+fromMilliseconds = TS . (/ 1000) . realToFrac
+
+toMilliseconds :: Timestamp -> Integer
+toMilliseconds = floor . (* 1000) . fromTS
+
+instance Num Timestamp where
+  (+) = TS .$ (+) `on` fromTS
+  (*) = TS .$ (*) `on` fromTS
+  (-) = TS .$ (-) `on` fromTS
+  negate = TS . negate . fromTS
+  abs = TS . abs . fromTS
+  signum = TS . signum . fromTS
+  fromInteger = fromMilliseconds
+
+instance Show Timestamp where
+  show = show . fromTS
+
+-- | Note that this instance uses scientific notation (with exponents) while
+-- HubSpot's output uses decimal notation (without exponents).
+instance ToJSON Timestamp where
+  toJSON = toJSON . toMilliseconds
+
+instance FromJSON Timestamp where
+  parseJSON = fmap fromMilliseconds . parseJSON
+
+--------------------------------------------------------------------------------
+
 -- | Contact ID (sometimes called visitor ID or vid)
 --
 -- Note: Use the 'Num' instance for easy construction.
@@ -283,24 +317,37 @@ data PropOption = PropOption
 
 -- | This is used to set the value of a property on a contact.
 data PropValue = PropValue
-  { pvName  :: !Text
-  , pvValue :: !Text
+  { pvName     :: !Text
+  , pvValue    :: !Text
+  , pvVersions :: ![PropVersion]
   }
 
 instance ToJSON PropValue where
-  toJSON PropValue {..} = object
+  toJSON PropValue {..} = object $
     [ "property" .= pvName
     , "value"    .= pvValue
-    ]
+    ] ++
+    (pairIf (not . null) "versions" pvVersions) -- Only included if not empty
 
 instance FromJSON PropValue where
   parseJSON = withObject "PropValue" $ \o -> do
-    PropValue <$> o .: "property"
-              <*> o .: "value"
+    PropValue <$> o .:  "property"
+              <*> o .:  "value"
+              <*> o .:* "versions"  -- Empty if not found
 
 -- | An unexported, intermediate type used for retrieving a list of
 -- 'PropValue's.
 data PropValueList = PropValueList { pvlProperties  :: ![PropValue] }
+
+-- | A property value with version metadata
+data PropVersion = PropVersion
+  { pverValue       :: !Text
+  , pverSourceType  :: !Text
+  , pverSourceId    :: !(Maybe Text)
+  , pverSourceLabel :: !(Maybe Text)
+  , pverTimestamp   :: !Timestamp
+  , pverSelected    :: !Bool
+  }
 
 --------------------------------------------------------------------------------
 
@@ -316,7 +363,7 @@ data PropGroup = PropGroup
   , groupDisplayName  :: !Text
   , groupDisplayOrder :: !Int
   , groupPortalId     :: !PortalId
-  , groupProperties   :: ![Property] -- ^ This list is empty if no properties field is available.
+  , groupProperties   :: ![Property]
   }
   deriving Show
 
@@ -345,6 +392,8 @@ deriveJSON_ ''PropFieldType     (defaultEnumOptions   3)
 
 deriveJSON_ ''PropOption        (defaultRecordOptions 2)
 deriveJSON_ ''PropValueList     (defaultRecordOptions 3)
+
+deriveJSON_ ''PropVersion       (dashedRecordOptions  4)
 
 deriveJSON_ ''ContactsPage
   defaultOptions { fieldLabelModifier = map (\c -> if c == '_' then '-' else c) }

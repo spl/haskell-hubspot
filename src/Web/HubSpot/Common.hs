@@ -13,11 +13,13 @@ module Web.HubSpot.Common
   , module Data.Char
   , module Data.Either
   , module Data.Foldable
+  , module Data.Function
   , module Data.Maybe
   , module Data.Monoid
   , module Data.String
   , module Data.Text
   , module Data.Time.Clock
+  , module Data.Time.Clock.POSIX
   , module Data.Traversable.Compat
   , module Network.HTTP.Conduit
   , module Network.HTTP.Types
@@ -41,6 +43,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import Data.Either
 import Data.Foldable (foldMap)
+import Data.Function
 import Data.Maybe
 import Data.Monoid
 import Data.String (IsString(..))
@@ -48,6 +51,7 @@ import Data.Text (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import Data.Traversable.Compat
 import Language.Haskell.TH (Name, Q, Dec)
 import Network.HTTP.Conduit hiding (parseUrl)
@@ -64,9 +68,19 @@ import Data.ByteString.Lazy.Builder.ASCII (intDec)
 
 --------------------------------------------------------------------------------
 
+(.$) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+f .$ g = \x y -> f (g x y)
+infixr 9 .$
+
 headOnly :: (a -> a) -> [a] -> [a]
 headOnly _ []     = []
 headOnly f (x:xs) = f x : xs
+
+-- | Rewrite camelCase to lowercase with dashes
+camelToDashed :: String -> String
+camelToDashed []     = []
+camelToDashed (c:cs) | isUpper c = '-' : toLower c : camelToDashed cs
+                     | otherwise = c : camelToDashed cs
 
 showBS:: ByteString -> String
 showBS = TS.unpack . TS.decodeUtf8
@@ -202,4 +216,9 @@ defaultEnumOptions n = defaultOptions
 defaultRecordOptions :: Int -> Options
 defaultRecordOptions n = defaultOptions
   { fieldLabelModifier = headOnly toLower . drop n
+  }
+
+dashedRecordOptions :: Int -> Options
+dashedRecordOptions n = defaultOptions
+  { fieldLabelModifier = camelToDashed . headOnly toLower . drop n
   }
