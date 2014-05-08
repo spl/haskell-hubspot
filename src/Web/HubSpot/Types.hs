@@ -6,6 +6,7 @@ module Web.HubSpot.Types
   , Scope
   , Timestamp
   , Auth(..)
+  , UserToken(..)
   , ContactId(..)
   , Contact(..)
   , Property(..)
