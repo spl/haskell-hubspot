@@ -76,9 +76,9 @@ updateContact
   -> Auth
   -> Manager
   -> m ()
-updateContact contactId propValues = generalRequest
+updateContact contactId setProps = generalRequest
   ["https://api.hubapi.com/contacts/v1/contact/vid", keyVal contactId, "profile"]
-  (setJSONBody $ SetPropList propValues)
+  (setJSONBody $ SetPropList setProps)
   (\_ -> return ())
 
 --------------------------------------------------------------------------------
