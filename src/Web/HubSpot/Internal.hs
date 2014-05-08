@@ -219,7 +219,7 @@ instance FromJSON Timestamp where
 
 --------------------------------------------------------------------------------
 
--- | Contact ID (sometimes called visitor ID or vid)
+-- | Contact ID (also called visitor ID or vid)
 --
 -- Note: Use the 'Num' instance for easy construction.
 newtype ContactId = ContactId { fromContactId :: Int }
@@ -239,7 +239,7 @@ instance FromJSON ContactId where
 
 --------------------------------------------------------------------------------
 
--- | Contact User Token (sometimes called HubSpot cookie or hubspotutk)
+-- | Contact User Token (also called HubSpot cookie or hubspotutk)
 --
 -- Note: Use the 'IsString' instance (e.g. with @OverloadedStrings@) for easy
 -- construction.
