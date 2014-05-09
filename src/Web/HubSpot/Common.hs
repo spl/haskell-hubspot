@@ -123,6 +123,9 @@ obj .:* key = obj .: key <|> return []
 parseUrl :: MonadIO m => String -> m Request
 parseUrl = liftIO . Network.HTTP.Conduit.parseUrl
 
+urlEncodeText :: Bool -> Text -> Text
+urlEncodeText isQuery = TS.decodeUtf8 . urlEncode isQuery . TS.encodeUtf8
+
 --------------------------------------------------------------------------------
 
 setMethod :: Monad m => StdMethod -> Request -> m Request
