@@ -42,18 +42,19 @@ checkResponse :: MonadIO m => Response BL.ByteString -> m (Response BL.ByteStrin
 checkResponse rsp = do
   let status = responseStatus rsp
       body = responseBody rsp
-  case statusCode status of
-    200 -> return rsp
-    204 -> return rsp
-    _   -> throwIO $ UnexpectedHttpResponse status body
+  case status of
+    s | s == ok200        -> return rsp
+      | s == accepted202  -> return rsp
+      | s == noContent204 -> return rsp
+    _                     -> throwIO $ UnexpectedHttpResponse status body
 
 handleHttpException :: HttpException -> IO a
 handleHttpException e@(StatusCodeException status rspHdrs _) =
-  case statusCode status of
-    401 -> throwIO $ UnauthorizedRequest mErrMsg
-    404 -> throwIO $ DataNotFound mErrMsg
-    409 -> throwIO $ ConflictingEdit mErrMsg
-    _   -> throwIO e
+  case status of
+    s | s == unauthorized401  -> throwIO $ UnauthorizedRequest mErrMsg
+      | s == notFound404      -> throwIO $ DataNotFound mErrMsg
+      | s == conflict409      -> throwIO $ ConflictingEdit mErrMsg
+    _                         -> throwIO e
   where
     mErrMsg = do
       body <- lookup "X-Response-Body-Start" rspHdrs
