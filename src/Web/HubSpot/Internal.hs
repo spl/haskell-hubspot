@@ -16,7 +16,7 @@ import Data.Typeable (Typeable)
 -- from HubSpot and processing the response. It handles setting the acccess
 -- token in the query, setting the appropriate Accept type, and checking the
 -- HTTP status code in the response.
-generalRequest
+apiRequest
   :: MonadIO m
   => [Text]
   -> (Request -> IO Request)
@@ -24,9 +24,9 @@ generalRequest
   -> Auth
   -> Manager
   -> m a
-generalRequest urlSegments modifyRequest processResponse Auth {..} mgr =
+apiRequest pathSegments modifyRequest processResponse Auth {..} mgr =
   liftIO $ handle handleHttpException $
-  parseUrl (TS.unpack $ TS.intercalate "/" urlSegments)
+  parseUrl (TS.unpack $ TS.intercalate "/" $ "https://api.hubapi.com" : pathSegments)
   >>= acceptJSON
   >>= setQuery [("access_token", Just authAccessToken)]
   >>= modifyRequest

@@ -36,8 +36,8 @@ getAllContacts
 getAllContacts offset count auth mgr = do
   when (count < 0 || count > 100) $ fail $ "getAllContacts: bad count: " ++ show count
   when (offset < 0) $ fail $ "getAllContacts: bad offset: " ++ show offset
-  generalRequest
-    ["https://api.hubapi.com/contacts/v1/lists/all/contacts/all"]
+  apiRequest
+    ["contacts/v1/lists/all/contacts/all"]
     (addQuery [ ("count"     , Just $ intToBS count  )
               , ("vidOffset" , Just $ intToBS offset )
               ])
@@ -58,8 +58,8 @@ getContact
   -> Auth
   -> Manager
   -> m Contact
-getContact key = generalRequest
-  ["https://api.hubapi.com/contacts/v1/contact", keyName key, keyVal key, "profile"]
+getContact key = apiRequest
+  ["contacts/v1/contact", keyName key, keyVal key, "profile"]
   return
   (jsonContent "getContact")
 
@@ -77,8 +77,8 @@ getContacts
   -> Manager
   -> m [(ContactId, Contact)]
 getContacts []   = \_ _ -> return []
-getContacts keys = let key = keyName (head keys) in generalRequest
-  ["https://api.hubapi.com/contacts/v1/contact", key `TS.snoc` 's', "batch"]
+getContacts keys = let key = keyName (head keys) in apiRequest
+  ["contacts/v1/contact", key `TS.snoc` 's', "batch"]
   (addQuery $ queryTextToQuery $ map ((key,) . Just . keyVal) keys)
   (liftM (map (first read) . HM.toList) . jsonContent "getContacts")
 
@@ -92,8 +92,8 @@ updateContact
   -> Auth
   -> Manager
   -> m ()
-updateContact contactId setProps = generalRequest
-  ["https://api.hubapi.com/contacts/v1/contact/vid", keyVal contactId, "profile"]
+updateContact contactId setProps = apiRequest
+  ["contacts/v1/contact/vid", keyVal contactId, "profile"]
   (setJSONBody $ SetPropList setProps)
   (\_ -> return ())
 
@@ -107,8 +107,8 @@ createOrUpdateContact
   -> Auth
   -> Manager
   -> m (ContactId, Bool)
-createOrUpdateContact email setProps = generalRequest
-  ["https://api.hubapi.com/contacts/v1/contact/createOrUpdate/email/", urlEncodeText False email]
+createOrUpdateContact email setProps = apiRequest
+  ["contacts/v1/contact/createOrUpdate/email", urlEncodeText False email]
   (setJSONBody $ SetPropList setProps)
   (jsonContent "createOrUpdateContact")
 
@@ -121,8 +121,8 @@ createOrUpdateContacts
   -> Auth
   -> Manager
   -> m ()
-createOrUpdateContacts emailAndProps = generalRequest
-  ["https://api.hubapi.com/contacts/v1/contact/batch"]
+createOrUpdateContacts emailAndProps = apiRequest
+  ["contacts/v1/contact/batch"]
   (setJSONBody $ map toUpdateContact emailAndProps)
   (\_ -> return ())
 
