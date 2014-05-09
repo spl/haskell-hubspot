@@ -94,7 +94,7 @@ updateContact
   -> m ()
 updateContact contactId setProps = apiRequest
   ["contacts/v1/contact/vid", keyVal contactId, "profile"]
-  (setJSONBody $ SetPropList setProps)
+  (setJSONBody POST $ SetPropList setProps)
   (\_ -> return ())
 
 -- | Create or update a contact profile by email addresses
@@ -109,7 +109,7 @@ createOrUpdateContact
   -> m (ContactId, Bool)
 createOrUpdateContact email setProps = apiRequest
   ["contacts/v1/contact/createOrUpdate/email", urlEncodeText False email]
-  (setJSONBody $ SetPropList setProps)
+  (setJSONBody POST $ SetPropList setProps)
   (jsonContent "createOrUpdateContact")
 
 -- | Create or update multiple contact profiles by email addresses
@@ -123,7 +123,7 @@ createOrUpdateContacts
   -> m ()
 createOrUpdateContacts emailAndProps = apiRequest
   ["contacts/v1/contact/batch"]
-  (setJSONBody $ map toUpdateContact emailAndProps)
+  (setJSONBody POST $ map toUpdateContact emailAndProps)
   (\_ -> return ())
 
 --------------------------------------------------------------------------------

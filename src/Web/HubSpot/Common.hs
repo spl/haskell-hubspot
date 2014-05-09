@@ -179,10 +179,11 @@ mimeTypeContent rsp =
 setUrlEncodedBody :: Monad m => [(ByteString, ByteString)] -> Request -> m Request
 setUrlEncodedBody body req = return $ urlEncodedBody body req
 
-setBody :: Monad m => ByteString -> BL.ByteString -> Request -> m Request
-setBody contentType body req =
+setBody :: Monad m => StdMethod -> ByteString -> BL.ByteString -> Request -> m Request
+setBody method contentType body req =
   return req { requestBody = RequestBodyLBS body } >>=
-  setContentType contentType
+  setContentType contentType >>=
+  setMethod method
 
 --------------------------------------------------------------------------------
 
@@ -192,8 +193,8 @@ contentTypeJSON = "application/json"
 acceptJSON :: Monad m => Request -> m Request
 acceptJSON = addHeader (hAccept, contentTypeJSON)
 
-setJSONBody :: (Monad m, ToJSON a) => a -> Request -> m Request
-setJSONBody obj = setBody contentTypeJSON $ encode obj
+setJSONBody :: (Monad m, ToJSON a) => StdMethod -> a -> Request -> m Request
+setJSONBody method obj = setBody method contentTypeJSON $ encode obj
 
 jsonContent :: (Monad m, FromJSON a) => String -> Response BL.ByteString -> m a
 jsonContent msg rsp = do
