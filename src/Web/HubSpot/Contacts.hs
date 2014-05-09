@@ -3,6 +3,7 @@ module Web.HubSpot.Contacts
   , getContact
   , getContacts
   , updateContact
+  , createOrUpdateContacts
   , ContactKey
   ) where
 
@@ -79,6 +80,20 @@ updateContact
 updateContact contactId setProps = generalRequest
   ["https://api.hubapi.com/contacts/v1/contact/vid", keyVal contactId, "profile"]
   (setJSONBody $ SetPropList setProps)
+  (\_ -> return ())
+
+-- | Create or update multiple contact profiles by email addresses
+--
+-- https://developers.hubspot.com/docs/methods/contacts/batch_create_or_update
+createOrUpdateContacts
+  :: MonadIO m
+  => [(Email, [SetProp])]  -- ^ Each pair consists of a 'Text' email address and properties
+  -> Auth
+  -> Manager
+  -> m ()
+createOrUpdateContacts emailAndProps = generalRequest
+  ["https://api.hubapi.com/contacts/v1/contact/batch"]
+  (setJSONBody $ map toUpdateContact emailAndProps)
   (\_ -> return ())
 
 --------------------------------------------------------------------------------

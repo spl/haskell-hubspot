@@ -140,6 +140,9 @@ type RefreshToken = ByteString
 -- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
 type Scope = ByteString
 
+-- | Email address
+type Email = Text
+
 --------------------------------------------------------------------------------
 
 -- | Authentication information
@@ -402,6 +405,15 @@ data SetProp = SetProp
 -- | An intermediate type used only for its 'ToJSON' instance.
 data SetPropList = SetPropList { splProperties :: ![SetProp] }
 
+-- | An intermediate type used only for its 'ToJSON' instance.
+data UpdateContact = UpdateContact
+  { ucEmail      :: !Email
+  , ucProperties :: ![SetProp]
+  }
+
+toUpdateContact :: (Email, [SetProp]) -> UpdateContact
+toUpdateContact (email, setProps) = UpdateContact email setProps
+
 --------------------------------------------------------------------------------
 
 -- | A property group.
@@ -449,5 +461,6 @@ deriveJSON_     ''PropVersion    (dashedRecordOptions  4)
 
 deriveJSON_     ''SetProp        (defaultRecordOptions 2)
 deriveToJSON_   ''SetPropList    (defaultRecordOptions 3)
+deriveToJSON_   ''UpdateContact  (defaultRecordOptions 2)
 
 deriveFromJSON_ ''ContactPage    (dashedRecordOptions  0)
