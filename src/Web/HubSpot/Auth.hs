@@ -79,7 +79,7 @@ refreshAuth clientId Auth {..} mgr =
                             ]
       >>= flip httpLbs mgr
       >>= checkResponse
-      >>= jsonContent "refreshAuth"
+      >>= fromJSONResponse "refreshAuth"
       >>= parseRefreshAuth
 
 -- | Given a function that requires authentication, first check if the access

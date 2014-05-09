@@ -41,7 +41,7 @@ getAllContacts offset count auth mgr = do
     (addQuery [ ("count"     , Just $ intToBS count  )
               , ("vidOffset" , Just $ intToBS offset )
               ])
-    (liftM fromContactPage . jsonContent "getAllContacts")
+    (liftM fromContactPage . fromJSONResponse "getAllContacts")
     auth
     mgr
 
@@ -61,7 +61,7 @@ getContact
 getContact key = apiRequest
   ["contacts/v1/contact", keyName key, keyVal key, "profile"]
   return
-  (jsonContent "getContact")
+  (fromJSONResponse "getContact")
 
 -- | Get multiple contact profiles by keys
 --
@@ -80,7 +80,7 @@ getContacts []   = \_ _ -> return []
 getContacts keys = let key = keyName (head keys) in apiRequest
   ["contacts/v1/contact", key `TS.snoc` 's', "batch"]
   (addQuery $ queryTextToQuery $ map ((key,) . Just . keyVal) keys)
-  (liftM (map (first read) . HM.toList) . jsonContent "getContacts")
+  (liftM (map (first read) . HM.toList) . fromJSONResponse "getContacts")
 
 -- | Update a contact profile by a 'ContactId'
 --
@@ -110,7 +110,7 @@ createOrUpdateContact
 createOrUpdateContact email setProps = apiRequest
   ["contacts/v1/contact/createOrUpdate/email", urlEncodeText False email]
   (setJSONBody POST $ SetPropList setProps)
-  (jsonContent "createOrUpdateContact")
+  (fromJSONResponse "createOrUpdateContact")
 
 -- | Create or update multiple contact profiles by email addresses
 --

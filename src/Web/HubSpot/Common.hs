@@ -196,8 +196,8 @@ acceptJSON = addHeader (hAccept, contentTypeJSON)
 setJSONBody :: (Monad m, ToJSON a) => StdMethod -> a -> Request -> m Request
 setJSONBody method obj = setBody method contentTypeJSON $ encode obj
 
-jsonContent :: (Monad m, FromJSON a) => String -> Response BL.ByteString -> m a
-jsonContent msg rsp = do
+fromJSONResponse :: (Monad m, FromJSON a) => String -> Response BL.ByteString -> m a
+fromJSONResponse msg rsp = do
   (contentType, body) <- mimeTypeContent rsp
   if contentType == contentTypeJSON then
     maybe (fail $ msg ++ ": Can't decode JSON from response: " ++ show rsp)

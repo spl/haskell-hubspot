@@ -19,7 +19,7 @@ getProperty
 getProperty name = apiRequest
   ["contacts/v1/properties", name]
   return
-  (jsonContent "getProperty")
+  (fromJSONResponse "getProperty")
 
 -- | Get all contact properties (fields)
 --
@@ -32,7 +32,7 @@ getAllProperties
 getAllProperties = apiRequest
   ["contacts/v1/properties"]
   return
-  (jsonContent "getAllProperties")
+  (fromJSONResponse "getAllProperties")
 
 -- | Create a new contact property (field)
 --
@@ -46,7 +46,7 @@ createProperty
 createProperty prop = apiRequest
   ["contacts/v1/properties", propName prop]
   (setJSONBody PUT prop)
-  (jsonContent "createProperty")
+  (fromJSONResponse "createProperty")
 
 -- | Update a new contact property (field)
 --
@@ -60,7 +60,7 @@ updateProperty
 updateProperty prop = apiRequest
   ["contacts/v1/properties", propName prop]
   (setJSONBody POST prop)
-  (jsonContent "updateProperty")
+  (fromJSONResponse "updateProperty")
 
 -- | Get a property group with all the properties in that group
 --
@@ -74,7 +74,7 @@ getPropGroup
 getPropGroup name = apiRequest
   ["contacts/v1/groups", name]
   return
-  (jsonContent "getPropGroup")
+  (fromJSONResponse "getPropGroup")
 
 -- | Get all property groups
 --
@@ -87,7 +87,7 @@ getAllPropGroups
 getAllPropGroups = apiRequest
   ["contacts/v1/groups"]
   return
-  (jsonContent "getAllPropGroups")
+  (fromJSONResponse "getAllPropGroups")
 
 -- | Create a property group
 --
@@ -105,7 +105,7 @@ createPropGroup
 createPropGroup group = apiRequest
   ["contacts/v1/groups", groupName group]
   (setJSONBody PUT group)
-  (jsonContent "createPropGroup")
+  (fromJSONResponse "createPropGroup")
 
 -- | Update a property group
 --
@@ -119,4 +119,4 @@ updatePropGroup
 updatePropGroup group = apiRequest
   ["contacts/v1/groups", groupName group]
   (setJSONBody POST group)
-  (jsonContent "updatePropGroup")
+  (fromJSONResponse "updatePropGroup")
