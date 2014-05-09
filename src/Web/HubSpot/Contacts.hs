@@ -45,9 +45,15 @@ getAllContacts offset count auth mgr = do
     mgr
 
 -- | Get a contact profile by a key
+--
+-- By 'ContactId': https://developers.hubspot.com/docs/methods/contacts/get_contact
+--
+-- By 'UserToken': https://developers.hubspot.com/docs/methods/contacts/get_contact_by_utk
+--
+-- By email address ('Text'): https://developers.hubspot.com/docs/methods/contacts/get_contact_by_email
 getContact
   :: (MonadIO m, ContactKey key)
-  => key   -- ^ A 'ContactId', a 'UserToken', or a 'Text' email address
+  => key   -- ^ 'ContactId', 'UserToken', or email address ('Text')
   -> Auth
   -> Manager
   -> m Contact
@@ -57,9 +63,15 @@ getContact key = generalRequest
   (jsonContent "getContact")
 
 -- | Get multiple contact profiles by keys
+--
+-- By 'ContactId': https://developers.hubspot.com/docs/methods/contacts/get_batch_by_vid
+--
+-- By 'UserToken': https://developers.hubspot.com/docs/methods/contacts/get_contact_by_utk
+--
+-- By email address ('Text'): https://developers.hubspot.com/docs/methods/contacts/get_batch_by_email
 getContacts
   :: (MonadIO m, ContactKey key)
-  => [key]   -- ^ A list of 'ContactId's, 'UserToken's, or 'Text' email addresses
+  => [key]   -- ^ @key@ is 'ContactId', 'UserToken', or email address ('Text')
   -> Auth
   -> Manager
   -> m [(ContactId, Contact)]
@@ -70,6 +82,8 @@ getContacts keys = let key = keyName (head keys) in generalRequest
   (liftM (map (first read) . HM.toList) . jsonContent "getContacts")
 
 -- | Update a contact profile by a 'ContactId'
+--
+-- https://developers.hubspot.com/docs/methods/contacts/update_contact
 updateContact
   :: MonadIO m
   => ContactId
@@ -102,17 +116,14 @@ class ContactKey key where
   keyName :: key -> Text
   keyVal  :: key -> Text
 
--- | https://developers.hubspot.com/docs/methods/contacts/get_contact
 instance ContactKey ContactId where
   keyName _ = "vid"
   keyVal = TS.pack . show
 
--- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_utk
 instance ContactKey UserToken where
   keyName _ = "utk"
   keyVal = TS.decodeUtf8 . fromUserToken
 
--- | https://developers.hubspot.com/docs/methods/contacts/get_contact_by_email
 instance ContactKey Text where
   keyName _ = "email"
   keyVal = id
