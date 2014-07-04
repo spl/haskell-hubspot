@@ -99,6 +99,9 @@ updateContact contactId setProps = apiRequest
 
 -- | Create or update a contact profile by email addresses
 --
+-- The result includes the contact ID and whether it was created (@True@) or
+-- updated (@False@).
+--
 -- https://developers.hubspot.com/docs/methods/contacts/create_or_update
 createOrUpdateContact
   :: MonadIO m
@@ -110,7 +113,7 @@ createOrUpdateContact
 createOrUpdateContact email setProps = apiRequest
   ["contacts/v1/contact/createOrUpdate/email", urlEncodeText False email]
   (setJSONBody POST $ SetPropList setProps)
-  (fromJSONResponse "createOrUpdateContact")
+  (liftM fromContactCreated . fromJSONResponse "createOrUpdateContact")
 
 -- | Create or update multiple contact profiles by email addresses
 --

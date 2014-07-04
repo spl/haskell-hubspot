@@ -1,5 +1,5 @@
 name:                   hubspot
-version:                0.0.1
+version:                0.0.2
 synopsis:               Implementation of parts of the HubSpot API
 homepage:               https://www.github.com/docmunch/haskell-hubspot
 license:                MIT

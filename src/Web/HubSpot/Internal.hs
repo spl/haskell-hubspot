@@ -286,6 +286,16 @@ data ContactPage = ContactPage
 fromContactPage :: ContactPage -> ([Contact], Bool, Int)
 fromContactPage (ContactPage a b c) = (a, b, c)
 
+-- | An intermediate type used only for its 'FromJSON' instance.
+data ContactCreated = ContactCreated
+  { ccVid   :: !ContactId
+  , ccIsNew :: !Bool
+  }
+  deriving Show
+
+fromContactCreated :: ContactCreated -> (ContactId, Bool)
+fromContactCreated (ContactCreated a b) = (a, b)
+
 --------------------------------------------------------------------------------
 
 -- | This represents a contact property (or field) object.
@@ -464,3 +474,4 @@ deriveToJSON_   ''SetPropList    (defaultRecordOptions 3)
 deriveToJSON_   ''UpdateContact  (defaultRecordOptions 2)
 
 deriveFromJSON_ ''ContactPage    (dashedRecordOptions  0)
+deriveFromJSON_ ''ContactCreated (defaultRecordOptions 2)
