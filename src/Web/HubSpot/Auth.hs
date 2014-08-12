@@ -3,6 +3,7 @@ module Web.HubSpot.Auth
   , parseAuth
   , refreshAuth
   , withRefresh
+  , checkRefreshAuth
   ) where
 
 --------------------------------------------------------------------------------
@@ -94,11 +95,15 @@ withRefresh
   -> Manager
   -> m (Maybe Auth, b)
 withRefresh run clientId auth@Auth {..} mgr = do
+  mauth <- checkRefreshAuth clientId mgr auth
+  result <- run (fromMaybe auth mauth) mgr
+  return (mauth, result)
+
+checkRefreshAuth :: MonadIO m => ClientId -> Manager -> Auth -> m (Maybe Auth)
+checkRefreshAuth clientId mgr auth@Auth {..} = do
   tm <- liftIO getCurrentTime
   let expired = authExpiration `diffUTCTime` tm < 5 * 60 {- 5 minutes -}
-  auth' <- if expired then refreshAuth clientId auth mgr else return auth
-  result <- run auth' mgr
-  return (if expired then Just auth' else Nothing, result)
+  if expired then Just `liftM` refreshAuth clientId auth mgr else return Nothing
 
 --------------------------------------------------------------------------------
 
