@@ -31,7 +31,7 @@ getAllContacts
   => Int  -- ^ Offset into list of all contacts, starts at 0
   -> Int  -- ^ Count (maximum: 100)
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m ([Contact], Bool, Int)
 getAllContacts offset count auth mgr = do
   when (count < 0 || count > 100) $ fail $ "getAllContacts: bad count: " ++ show count
@@ -56,7 +56,7 @@ getContact
   :: (MonadIO m, ContactKey key)
   => key   -- ^ 'ContactId', 'UserToken', or email address ('Text')
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m Contact
 getContact key = apiRequest
   ["contacts/v1/contact", keyName key, keyVal key, "profile"]
@@ -74,7 +74,7 @@ getContacts
   :: (MonadIO m, ContactKey key)
   => [key]   -- ^ @key@ is 'ContactId', 'UserToken', or email address ('Text')
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m [(ContactId, Contact)]
 getContacts []   = \_ _ -> return []
 getContacts keys = let key = keyName (head keys) in apiRequest
@@ -90,7 +90,7 @@ updateContact
   => ContactId
   -> [SetProp]
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m ()
 updateContact contactId setProps = apiRequest
   ["contacts/v1/contact/vid", keyVal contactId, "profile"]
@@ -108,7 +108,7 @@ createOrUpdateContact
   => Email
   -> [SetProp]
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m (ContactId, Bool)
 createOrUpdateContact email setProps = apiRequest
   ["contacts/v1/contact/createOrUpdate/email", urlEncodeText False email]
@@ -122,7 +122,7 @@ createOrUpdateContacts
   :: MonadIO m
   => [(Email, [SetProp])]  -- ^ Each pair consists of a 'Text' email address and properties
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m ()
 createOrUpdateContacts emailAndProps = apiRequest
   ["contacts/v1/contact/batch"]

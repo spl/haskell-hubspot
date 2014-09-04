@@ -20,6 +20,8 @@ module Web.HubSpot.Types
   , PropOption(..)
   , PropGroup(..)
   , HubSpotException(..)
+  , ManageRequest
+  , getManager
   ) where
 
 --------------------------------------------------------------------------------
