@@ -33,6 +33,7 @@ library
                         Web.HubSpot.Auth
                         Web.HubSpot.Contacts
                         Web.HubSpot.Contacts.Properties
+                        Web.HubSpot.Forms
                         Web.HubSpot.Types
   other-modules:
                         Web.HubSpot.Common

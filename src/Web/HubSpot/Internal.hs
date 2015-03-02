@@ -460,6 +460,37 @@ instance FromJSON PropGroup where
               <*> o .:* "properties"  -- Empty if not found
 
 --------------------------------------------------------------------------------
+
+-- | A form description fetched from HubSpot.
+data Form = Form
+  { formGuid       :: !Text
+  , formName       :: !Text
+  , formAction     :: !Text
+  , formMethod     :: !Text
+  , formCssClass   :: !Text
+  , formRedirect   :: !Text
+  , formSubmitText :: !Text
+  , formFields     :: ![FormField]
+  }
+  deriving Show
+
+--------------------------------------------------------------------------------
+
+-- | A field on a form.
+data FormField = FormField
+  { ffieldName         :: !Text
+  , ffieldLabel        :: !Text
+  , ffieldDescription  :: !Text
+  , ffieldGroupName    :: !Text
+  , ffieldType         :: !Text
+  , ffieldFieldType    :: !Text
+  , ffieldDisplayOrder :: !Int
+  , ffieldRequired     :: !Bool
+  , ffieldEnabled      :: !Bool
+  }
+  deriving Show
+
+--------------------------------------------------------------------------------
 -- Template Haskell declarations go at the end.
 
 deriveJSON_     ''PropType       (defaultEnumOptions   2)
@@ -475,3 +506,6 @@ deriveToJSON_   ''UpdateContact  (defaultRecordOptions 2)
 
 deriveFromJSON_ ''ContactPage    (dashedRecordOptions  0)
 deriveFromJSON_ ''ContactCreated (defaultRecordOptions 2)
+
+deriveFromJSON_ ''Form           (defaultRecordOptions 4)
+deriveFromJSON_ ''FormField      (defaultRecordOptions 6)
