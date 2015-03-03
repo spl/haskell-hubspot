@@ -507,5 +507,5 @@ deriveToJSON_   ''UpdateContact  (defaultRecordOptions 2)
 deriveFromJSON_ ''ContactPage    (dashedRecordOptions  0)
 deriveFromJSON_ ''ContactCreated (defaultRecordOptions 2)
 
-deriveFromJSON_ ''Form           (defaultRecordOptions 4)
-deriveFromJSON_ ''FormField      (defaultRecordOptions 6)
+deriveJSON_     ''Form           (defaultRecordOptions 4)
+deriveJSON_     ''FormField      (defaultRecordOptions 6)
