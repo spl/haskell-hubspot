@@ -1,0 +1,4 @@
+/                       HomeR            GET
+/auth                   AuthR            GET POST
+/forms/all              FormsAllR        GET
+/form/#String           FormR            GET

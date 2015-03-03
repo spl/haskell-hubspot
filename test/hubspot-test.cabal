@@ -1,0 +1,38 @@
+name:               hubspot-test
+version:            0.0
+cabal-version:      >= 1.10
+build-type:         Simple
+extra-source-files: routes
+
+executable          hubspot-test
+  main-is:          Main.hs
+  other-modules:    Application
+                    Foundation
+
+                    Auth
+                    Forms
+                    Home
+
+  build-depends:
+                    aeson,
+                    base,
+                    blaze-markup,
+                    http-client,
+                    http-client-tls,
+                    hubspot,
+                    text,
+                    wai,
+                    yesod-core
+
+  default-language: Haskell2010
+  default-extensions:
+                    LambdaCase
+                    OverloadedStrings
+                    QuasiQuotes
+                    RecordWildCards
+                    ScopedTypeVariables
+                    TemplateHaskell
+                    TypeFamilies
+                    ViewPatterns
+
+  ghc-options:      -Wall -fwarn-tabs -O2 -threaded -rtsopts -with-rtsopts=-N
