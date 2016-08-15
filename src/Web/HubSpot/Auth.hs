@@ -46,7 +46,7 @@ parseAuth :: MonadIO m => Query -> m (Either ByteString Auth)
 parseAuth q = do
   let err = "parseAuth: failed to parse query: " <> renderQuery False q
   tm <- liftIO getCurrentTime
-  return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
+  return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $
     Auth <$> lookupQ "access_token" q
          <*> pure (lookupQ "refresh_token" q)
          <*> (expireTime tm <$> join (intFromBS <$> lookupQ "expires_in" q))
@@ -59,9 +59,9 @@ refreshAuth
   :: MonadIO m
   => ClientId
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m Auth
-refreshAuth clientId Auth {..} mgr =
+refreshAuth clientId Auth {..} (mgr, reqMod) =
   case authRefreshToken of
     Nothing ->
       -- We throw an exception in this case because it is simple. A more
@@ -71,14 +71,14 @@ refreshAuth clientId Auth {..} mgr =
       -- rare occurrence (calling 'refreshAuth' with an 'Auth' which doesn't
       -- have a 'RefreshToken').
       liftIO $ throwIO NoRefreshToken
-    Just refreshToken -> do
+    Just refreshToken ->
       parseUrl "https://api.hubapi.com/auth/v1/refresh"
       >>= acceptJSON
       >>= setUrlEncodedBody [ ( "refresh_token" , refreshToken          )
                             , ( "client_id"     , fromClientId clientId )
                             , ( "grant_type"    , "refresh_token"       )
                             ]
-      >>= flip httpLbs mgr
+      >>= flip httpLbs mgr . reqMod
       >>= checkResponse
       >>= fromJSONResponse "refreshAuth"
       >>= parseRefreshAuth
@@ -92,18 +92,18 @@ withRefresh
   => (Auth -> Manager -> m b)
   -> ClientId
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m (Maybe Auth, b)
-withRefresh run clientId auth@Auth {..} mgr = do
-  mauth <- checkRefreshAuth clientId mgr auth
-  result <- run (fromMaybe auth mauth) mgr
+withRefresh run clientId auth@Auth {..} manage = do
+  mauth <- checkRefreshAuth clientId manage auth
+  result <- run (fromMaybe auth mauth) (getManager manage)
   return (mauth, result)
 
-checkRefreshAuth :: MonadIO m => ClientId -> Manager -> Auth -> m (Maybe Auth)
-checkRefreshAuth clientId mgr auth@Auth {..} = do
+checkRefreshAuth :: MonadIO m => ClientId -> ManageRequest -> Auth -> m (Maybe Auth)
+checkRefreshAuth clientId manage auth@Auth {..} = do
   tm <- liftIO getCurrentTime
   let expired = authExpiration `diffUTCTime` tm < 5 * 60 {- 5 minutes -}
-  if expired then Just `liftM` refreshAuth clientId auth mgr else return Nothing
+  if expired then Just `liftM` refreshAuth clientId auth manage else return Nothing
 
 --------------------------------------------------------------------------------
 

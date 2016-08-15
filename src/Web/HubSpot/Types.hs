@@ -22,6 +22,8 @@ module Web.HubSpot.Types
   , Form(..)
   , FormField(..)
   , HubSpotException(..)
+  , ManageRequest
+  , getManager
   ) where
 
 --------------------------------------------------------------------------------

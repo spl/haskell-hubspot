@@ -14,7 +14,7 @@ getProperty
   :: MonadIO m
   => Text  -- ^ Property name
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m Property
 getProperty name = apiRequest
   ["contacts/v1/properties", name]
@@ -27,7 +27,7 @@ getProperty name = apiRequest
 getAllProperties
   :: MonadIO m
   => Auth
-  -> Manager
+  -> ManageRequest
   -> m [Property]
 getAllProperties = apiRequest
   ["contacts/v1/properties"]
@@ -41,7 +41,7 @@ createProperty
   :: MonadIO m
   => Property
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m Property
 createProperty prop = apiRequest
   ["contacts/v1/properties", propName prop]
@@ -55,7 +55,7 @@ updateProperty
   :: MonadIO m
   => Property
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m Property
 updateProperty prop = apiRequest
   ["contacts/v1/properties", propName prop]
@@ -69,7 +69,7 @@ getPropGroup
   :: MonadIO m
   => Text  -- ^ Group name
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m PropGroup
 getPropGroup name = apiRequest
   ["contacts/v1/groups", name]
@@ -82,7 +82,7 @@ getPropGroup name = apiRequest
 getAllPropGroups
   :: MonadIO m
   => Auth
-  -> Manager
+  -> ManageRequest
   -> m [PropGroup]
 getAllPropGroups = apiRequest
   ["contacts/v1/groups"]
@@ -100,7 +100,7 @@ createPropGroup
   :: MonadIO m
   => PropGroup
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m PropGroup
 createPropGroup group = apiRequest
   ["contacts/v1/groups", groupName group]
@@ -114,7 +114,7 @@ updatePropGroup
   :: MonadIO m
   => PropGroup
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m PropGroup
 updatePropGroup group = apiRequest
   ["contacts/v1/groups", groupName group]

@@ -12,6 +12,14 @@ import Data.Typeable (Typeable)
 
 --------------------------------------------------------------------------------
 
+-- | Allow the library user to make a simple request modification
+--
+-- modification is applied immediately before the request
+-- so it will override anything set in the library
+type ManageRequest = (Manager, Request -> Request)
+getManager :: ManageRequest -> Manager
+getManager = fst
+
 -- | This function contains the general flow of a function requesting something
 -- from HubSpot and processing the response. It handles setting the acccess
 -- token in the query, setting the appropriate Accept type, and checking the
@@ -22,15 +30,15 @@ apiRequest
   -> (Request -> IO Request)
   -> (Response BL.ByteString -> IO a)
   -> Auth
-  -> Manager
+  -> ManageRequest
   -> m a
-apiRequest pathSegments modifyRequest processResponse Auth {..} mgr =
+apiRequest pathSegments modifyRequest processResponse Auth {..} (mgr, reqMod) =
   liftIO $ handle handleHttpException $
   parseUrl (TS.unpack $ TS.intercalate "/" $ "https://api.hubapi.com" : pathSegments)
   >>= acceptJSON
   >>= setQuery [("access_token", Just authAccessToken)]
   >>= modifyRequest
-  >>= flip httpLbs mgr
+  >>= flip httpLbs mgr . reqMod
   >>= checkResponse
   >>= processResponse
 
