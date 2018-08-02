@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Web.HubSpot.Auth
   ( makeAuthUrl
   , parseAuth

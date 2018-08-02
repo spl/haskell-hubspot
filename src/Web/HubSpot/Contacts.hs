@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
+
 module Web.HubSpot.Contacts
   ( getAllContacts
   , getContact
@@ -92,8 +95,8 @@ updateContact
   -> Auth
   -> Manager
   -> m ()
-updateContact contactId setProps = apiRequest
-  ["contacts/v1/contact/vid", keyVal contactId, "profile"]
+updateContact contactId' setProps = apiRequest
+  ["contacts/v1/contact/vid", keyVal contactId', "profile"]
   (setJSONBody POST $ SetPropList setProps)
   (\_ -> return ())
 

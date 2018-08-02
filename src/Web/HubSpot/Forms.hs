@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Web.HubSpot.Forms
   ( getAllForms
   , getForm

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Web.HubSpot.Contacts.Properties where
 
 --------------------------------------------------------------------------------

@@ -1,3 +1,8 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Web.HubSpot.Internal where
 
 --------------------------------------------------------------------------------
@@ -49,15 +54,15 @@ checkResponse rsp = do
     _                     -> throwIO $ UnexpectedHttpResponse status body
 
 handleHttpException :: HttpException -> IO a
-handleHttpException e@(StatusCodeException status rspHdrs _) =
-  case status of
+handleHttpException e@(HttpExceptionRequest _ (StatusCodeException rsp _)) =
+  case responseStatus rsp of
     s | s == unauthorized401  -> throwIO $ UnauthorizedRequest mErrMsg
       | s == notFound404      -> throwIO $ DataNotFound mErrMsg
       | s == conflict409      -> throwIO $ ConflictingEdit mErrMsg
     _                         -> throwIO e
   where
     mErrMsg = do
-      body <- lookup "X-Response-Body-Start" rspHdrs
+      body <- lookup "X-Response-Body-Start" (responseHeaders rsp)
       decodeStrict' body
 handleHttpException e = throwIO e
 
