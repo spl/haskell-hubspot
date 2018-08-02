@@ -1,3 +1,8 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Web.HubSpot.Internal where
 
 --------------------------------------------------------------------------------
@@ -28,7 +33,7 @@ apiRequest pathSegments modifyRequest processResponse Auth {..} mgr =
   liftIO $ handle handleHttpException $
   parseUrl (TS.unpack $ TS.intercalate "/" $ "https://api.hubapi.com" : pathSegments)
   >>= acceptJSON
-  >>= setQuery [("access_token", Just authAccessToken)]
+  >>= setQuery [("access_token", Just (fromAccessToken authAccessToken))]
   >>= modifyRequest
   >>= flip httpLbs mgr
   >>= checkResponse
@@ -49,15 +54,15 @@ checkResponse rsp = do
     _                     -> throwIO $ UnexpectedHttpResponse status body
 
 handleHttpException :: HttpException -> IO a
-handleHttpException e@(StatusCodeException status rspHdrs _) =
-  case status of
+handleHttpException e@(HttpExceptionRequest _ (StatusCodeException rsp _)) =
+  case responseStatus rsp of
     s | s == unauthorized401  -> throwIO $ UnauthorizedRequest mErrMsg
       | s == notFound404      -> throwIO $ DataNotFound mErrMsg
       | s == conflict409      -> throwIO $ ConflictingEdit mErrMsg
     _                         -> throwIO e
   where
     mErrMsg = do
-      body <- lookup "X-Response-Body-Start" rspHdrs
+      body <- lookup "X-Response-Body-Start" (responseHeaders rsp)
       decodeStrict' body
 handleHttpException e = throwIO e
 
@@ -132,16 +137,32 @@ instance FromJSON PortalId where
 --------------------------------------------------------------------------------
 
 -- | Access token
-type AccessToken = ByteString
+newtype AccessToken = AccessToken { fromAccessToken :: ByteString }
+  deriving (Eq, Ord, Show)
+
+instance ToJSON AccessToken where
+  toJSON = toJSON . TS.decodeUtf8 . fromAccessToken
+
+instance FromJSON AccessToken where
+  parseJSON = fmap (AccessToken . TS.encodeUtf8) . parseJSON
 
 -- | Refresh token
-type RefreshToken = ByteString
+newtype RefreshToken = RefreshToken { fromRefreshToken :: ByteString }
+  deriving (Eq, Ord, Show)
+
+instance ToJSON RefreshToken where
+  toJSON = toJSON . TS.decodeUtf8 . fromRefreshToken
+
+instance FromJSON RefreshToken where
+  parseJSON = fmap (RefreshToken . TS.encodeUtf8) . parseJSON
 
 -- | An OAuth scope from https://developers.hubspot.com/auth/oauth_scopes
-type Scope = ByteString
+newtype Scope = Scope { fromScope :: ByteString }
+  deriving (Eq, Ord, Show)
 
 -- | Email address
-type Email = Text
+newtype Email = Email { fromEmail :: Text }
+  deriving (Eq, Ord, Show, ToJSON, FromJSON)
 
 --------------------------------------------------------------------------------
 
@@ -155,15 +176,15 @@ data Auth = Auth
 
 instance ToJSON Auth where
   toJSON Auth {..} = object
-    [ "access_token"  .= TS.decodeUtf8 authAccessToken
-    , "refresh_token" .= fmap TS.decodeUtf8 authRefreshToken
+    [ "access_token"  .= authAccessToken
+    , "refresh_token" .= authRefreshToken
     , "expiration"    .= authExpiration
     ]
 
 instance FromJSON Auth where
   parseJSON = withObject "Auth" $ \o -> do
-    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
-         <*> (fmap TS.encodeUtf8 <$> o .: "refresh_token")
+    Auth <$> o .: "access_token"
+         <*> o .: "refresh_token"
          <*> o .: "expiration"
 
 --------------------------------------------------------------------------------

@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Web.HubSpot.Auth
   ( makeAuthUrl
   , parseAuth
@@ -11,7 +14,6 @@ module Web.HubSpot.Auth
 import Web.HubSpot.Common
 import Web.HubSpot.Internal
 import qualified Data.ByteString as BS
-import qualified Data.Text.Encoding as TS
 
 --------------------------------------------------------------------------------
 
@@ -35,7 +37,7 @@ makeAuthUrl clientId portalId redirectUrl scopes = mconcat
       ]
   , "&scope="
     -- Do not use renderQuery for scopes to avoid percent-encoding the "+".
-  , BS.intercalate "+" $ map (urlEncode True) scopes
+  , BS.intercalate "+" $ map (urlEncode True . fromScope) scopes
   ]
 
 -- | Parse the query provided by HubSpot via the redirect URL given to
@@ -47,8 +49,8 @@ parseAuth q = do
   let err = "parseAuth: failed to parse query: " <> renderQuery False q
   tm <- liftIO getCurrentTime
   return $ maybe (Left $ fromMaybe err $ lookupQ "error" q) Right $ do
-    Auth <$> lookupQ "access_token" q
-         <*> pure (lookupQ "refresh_token" q)
+    Auth <$> (AccessToken <$> lookupQ "access_token" q)
+         <*> (Just . RefreshToken <$> lookupQ "refresh_token" q)
          <*> (expireTime tm <$> join (intFromBS <$> lookupQ "expires_in" q))
 
 -- | Refresh the access token
@@ -74,7 +76,7 @@ refreshAuth clientId Auth {..} mgr =
     Just refreshToken -> do
       parseUrl "https://api.hubapi.com/auth/v1/refresh"
       >>= acceptJSON
-      >>= setUrlEncodedBody [ ( "refresh_token" , refreshToken          )
+      >>= setUrlEncodedBody [ ( "refresh_token" , fromRefreshToken refreshToken )
                             , ( "client_id"     , fromClientId clientId )
                             , ( "grant_type"    , "refresh_token"       )
                             ]
@@ -114,6 +116,6 @@ parseRefreshAuth :: MonadIO m => Object -> m Auth
 parseRefreshAuth obj = do
   tm <- liftIO getCurrentTime
   either (fail . mappend "pAuth") return $ flip parseEither obj $ \o ->
-    Auth <$> (TS.encodeUtf8 <$> o .: "access_token")
-         <*> (pure . TS.encodeUtf8 <$> o .: "refresh_token")
+    Auth <$> (o .: "access_token")
+         <*> (Just <$> o .: "refresh_token")
          <*> (expireTime tm <$> o .: "expires_in")

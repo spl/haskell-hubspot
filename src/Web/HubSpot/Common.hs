@@ -1,3 +1,6 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Web.HubSpot.Common
   ( module Web.HubSpot.Common
   , module Prelude
@@ -20,7 +23,7 @@ module Web.HubSpot.Common
   , module Data.Text
   , module Data.Time.Clock
   , module Data.Time.Clock.POSIX
-  , module Data.Traversable.Compat
+  , module Data.Traversable
   , module Network.HTTP.Conduit
   , module Network.HTTP.Types
   ) where
@@ -52,10 +55,9 @@ import qualified Data.Text as TS
 import qualified Data.Text.Encoding as TS
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
-import Data.Traversable.Compat
+import Data.Traversable
 import Language.Haskell.TH (Name, Q, Dec)
-import Network.HTTP.Conduit hiding (parseUrl)
-import qualified Network.HTTP.Conduit
+import Network.HTTP.Conduit hiding (parseUrl, checkResponse)
 import Network.HTTP.Types
 import Network.Mime (MimeType)
 
@@ -121,7 +123,7 @@ obj .:* key = obj .: key <|> return []
 --------------------------------------------------------------------------------
 
 parseUrl :: MonadIO m => String -> m Request
-parseUrl = liftIO . Network.HTTP.Conduit.parseUrl
+parseUrl = liftIO . Network.HTTP.Conduit.parseUrlThrow
 
 urlEncodeText :: Bool -> Text -> Text
 urlEncodeText isQuery = TS.decodeUtf8 . urlEncode isQuery . TS.encodeUtf8
@@ -167,7 +169,7 @@ setContentType contentType = addHeader (hContentType, contentType)
 --
 -- Note: Taken from Yesod.Content in yesod-core.
 simpleContentType :: ByteString -> ByteString
-simpleContentType = fst . BS.breakByte 59 -- 59 == ;
+simpleContentType = fst . BS.break (== 59)
 
 mimeTypeContent :: Monad m => Response BL.ByteString -> m (MimeType, BL.ByteString)
 mimeTypeContent rsp =
@@ -180,10 +182,10 @@ setUrlEncodedBody :: Monad m => [(ByteString, ByteString)] -> Request -> m Reque
 setUrlEncodedBody body req = return $ urlEncodedBody body req
 
 setBody :: Monad m => StdMethod -> ByteString -> BL.ByteString -> Request -> m Request
-setBody method contentType body req =
+setBody method' contentType body req =
   return req { requestBody = RequestBodyLBS body } >>=
   setContentType contentType >>=
-  setMethod method
+  setMethod method'
 
 --------------------------------------------------------------------------------
 
@@ -194,7 +196,7 @@ acceptJSON :: Monad m => Request -> m Request
 acceptJSON = addHeader (hAccept, contentTypeJSON)
 
 setJSONBody :: (Monad m, ToJSON a) => StdMethod -> a -> Request -> m Request
-setJSONBody method obj = setBody method contentTypeJSON $ encode obj
+setJSONBody method' obj = setBody method' contentTypeJSON $ encode obj
 
 fromJSONResponse :: (Monad m, FromJSON a) => String -> Response BL.ByteString -> m a
 fromJSONResponse msg rsp = do
